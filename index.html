@@ -516,34 +516,16 @@
 
   function loadAgenda() {
     if (!CONFIG.agendaScript) { agMessage('Agenda pas encore relié'); return; }
-    var code = load('dash_agenda_code');
-    if (!code) { askCode(); return; }
-
-    var cb = 'agCb' + new Date().getTime();
-    var script = document.createElement('script');
-    var done = false;
-    var timer = setTimeout(function () { finish(); if (!agData) agMessage('Agenda injoignable, nouvel essai bientôt'); }, 20000);
-
-    function finish() {
-      done = true;
-      clearTimeout(timer);
-      try { delete window[cb]; } catch (e) { window[cb] = undefined; }
-      if (script.parentNode) script.parentNode.removeChild(script);
-    }
-
-    window[cb] = function (data) {
-      if (done) return;
-      finish();
-      if (data && data.erreur === 'code') { askCode('Code incorrect, réessaie'); return; }
+    if (!load('dash_agenda_code')) { askCode(); return; }
+    if (!window.Assistant) return;
+    Assistant.api({ jours: CONFIG.agendaJours }, function (data) {
       if (data && data.ev) { agData = data; renderAgenda(); }
-    };
-    script.onerror = function () { if (done) return; finish(); if (!agData) agMessage('Agenda injoignable, nouvel essai bientôt'); };
-    script.src = CONFIG.agendaScript + '?code=' + encodeURIComponent(code)
-      + '&jours=' + CONFIG.agendaJours + '&callback=' + cb + '&_t=' + new Date().getTime();
-    document.body.appendChild(script);
+    }, function (why) {
+      if (why === 'code') askCode('Code incorrect, réessaie');
+      else if (!agData) agMessage('Agenda injoignable, nouvel essai bientôt');
+    });
   }
 
-  loadAgenda();
   setInterval(loadAgenda, 10 * 60 * 1000);   // nouvelles données toutes les 10 min
   setInterval(renderAgenda, 60 * 1000);      // grise les rendez-vous passés
 
@@ -696,6 +678,7 @@
       applyList(d);
     }, function () {});
     setInterval(function () { srv({ action: 'liste' }); }, 30 * 1000);
+    loadAgenda();
   };
 </script>
 <script src="assistant.js"></script>
