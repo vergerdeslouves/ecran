@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#091b18">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <title>Courses – Au Verger des Louves</title>
+  <link rel="preconnect" href="https://fonts.gstatic.com">
+  <link href="https://fonts.googleapis.com/css?family=Readex+Pro:400,700|Fraunces:600&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+    html, body { background: #091b18; color: #f0eee5; font-family: 'Readex Pro', -apple-system, Helvetica, Arial, sans-serif; }
+    body { padding: 16px 16px 40px; max-width: 520px; margin: 0 auto; }
+    header { text-align: center; margin: 6px 0 18px; }
+    header img { width: 70%; max-width: 280px; filter: brightness(0) invert(0.94); -webkit-filter: brightness(0) invert(0.94); }
+    h2 { font-family: 'Fraunces', Georgia, serif; font-weight: 600; font-size: 18px; color: #b9b58d; margin-bottom: 10px; }
+    .card { background: #10372d; border: 1px solid #1d4a3e; border-radius: 16px; padding: 16px; margin-bottom: 14px; }
+
+    #mic {
+      display: block; width: 120px; height: 120px; margin: 4px auto 12px; border-radius: 60px; border: none;
+      background: #aed100; color: #091b18; font-size: 50px; box-shadow: 0 0 0 0 rgba(174, 209, 0, 0.6);
+    }
+    #mic.listening { background: #b56953; animation: pulse 1.2s infinite; }
+    @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(181,105,83,.6); } 100% { box-shadow: 0 0 0 26px rgba(181,105,83,0); } }
+    .hint { text-align: center; font-size: 13px; color: #b9b58d; line-height: 1.5; }
+    #reply { text-align: center; font-size: 16px; min-height: 24px; margin-top: 10px; }
+
+    .row { display: flex; gap: 8px; }
+    input[type=text] {
+      flex: 1; height: 46px; padding: 0 12px; font-size: 16px; border-radius: 12px; border: 1px solid #1d4a3e;
+      background: #091b18; color: #f0eee5; font-family: inherit;
+    }
+    .btn { height: 46px; padding: 0 16px; border: none; border-radius: 12px; font-size: 16px; font-weight: 700; font-family: inherit; }
+    .btn-green { background: #aed100; color: #091b18; }
+    .btn-dark { background: #091b18; color: #f0eee5; border: 1px solid #1d4a3e; flex: 1; height: 58px; }
+    .btn-dark:active { background: #aed100; color: #091b18; }
+
+    ul { list-style: none; margin-top: 10px; }
+    li { display: flex; align-items: center; padding: 12px 4px; border-bottom: 1px solid #1d4a3e; font-size: 17px; }
+    li .t { flex: 1; }
+    li.done .t { text-decoration: line-through; color: #b9b58d; }
+    li .x { color: #b56953; font-weight: 700; padding: 0 8px; font-size: 18px; }
+    .empty { color: #b9b58d; font-size: 14px; padding: 10px 0; }
+    .link { background: none; border: none; color: #b9b58d; font-size: 13px; text-decoration: underline; margin-top: 10px; font-family: inherit; }
+    #memo { white-space: pre-wrap; font-size: 15px; line-height: 1.5; color: #dfddd2; }
+    #code-box { display: none; }
+  </style>
+</head>
+<body>
+  <header><img src="https://vergerdeslouves.fr/wp-content/uploads/2023/09/fff.png" alt="Au Verger des Louves" onerror="this.outerHTML='<h2>Au Verger des Louves</h2>'"></header>
+
+  <div class="card" id="code-box">
+    <h2>Code d'accès</h2>
+    <div class="row"><input type="text" id="code" autocomplete="off" autocapitalize="off"><button class="btn btn-green" onclick="saveCode()">OK</button></div>
+  </div>
+
+  <div class="card">
+    <button id="mic" onclick="micTap()">🎤</button>
+    <div class="hint">Appuie et parle : « ajoute du lait et des œufs », « enlève le pain », « note : appeler le plombier », « allume les lumières »…</div>
+    <div id="reply"></div>
+  </div>
+
+  <div class="card">
+    <h2>Liste de courses</h2>
+    <div class="row">
+      <input type="text" id="add" placeholder="Ajouter un article…" autocomplete="off">
+      <button class="btn btn-green" onclick="addTyped()">+</button>
+    </div>
+    <ul id="list"></ul>
+    <button class="link" onclick="send('nettoie')">Retirer les articles cochés</button>
+  </div>
+
+  <div class="card">
+    <h2>Maison</h2>
+    <div class="row">
+      <button class="btn btn-dark" onclick="lightsTap('tout_on')">💡 Tout allumer</button>
+      <button class="btn btn-dark" onclick="lightsTap('tout_off')">🌙 Tout éteindre</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Mémo famille</h2>
+    <div id="memo"></div>
+  </div>
+
+<script>
+  window.ECRAN = {
+    script: 'https://script.google.com/macros/s/AKfycbyMVqA25gXgIfVRXzXCMrcoepVy7l8ceXsPXqJRuhsF2SlKxooWwcRqmlOCI_wYM9A/exec',
+    smart: {
+      tout_on: 'https://www.virtualsmarthome.xyz/url_routine_trigger/activate.php?trigger=d163655f-91b0-4522-b284-7ad8ae1281c7&token=53b88e84-94d5-460a-933e-343fef634c79&response=json',
+      tout_off: 'https://www.virtualsmarthome.xyz/url_routine_trigger/activate.php?trigger=3cd3bd73-8621-4efe-9a7c-02cbcd847f8a&token=3bf632ec-0e47-41ad-ad3f-1a36a1317ae3&response=json'
+    },
+    appareil: 'telephone'
+  };
+</script>
+<script src="assistant.js"></script>
+<script>
+  var $ = function (id) { return document.getElementById(id); };
+  var items = [];
+  function esc(t) { return String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+
+  function apply(d) {
+    if (d && d.liste) { items = d.liste; render(); }
+    if (d && typeof d.memo === 'string') $('memo').textContent = d.memo || 'Rien pour le moment';
+  }
+  function fail(why) {
+    if (why === 'code') { $('code-box').style.display = 'block'; reply('Entre le code d\'accès'); }
+    else reply('Pas de connexion à la liste');
+  }
+  function send(action, extra) {
+    var p = { action: action };
+    for (var k in extra || {}) p[k] = extra[k];
+    Assistant.api(p, apply, fail);
+  }
+  function reply(t) { $('reply').innerHTML = esc(t); }
+
+  function render() {
+    var ul = $('list'); ul.innerHTML = '';
+    if (!items.length) { ul.innerHTML = '<li class="empty">La liste est vide</li>'; return; }
+    items.forEach(function (it) {
+      var li = document.createElement('li'); li.className = it.d ? 'done' : '';
+      var t = document.createElement('span'); t.className = 't'; t.textContent = it.t;
+      t.onclick = function () { it.d = !it.d; render(); send('coche', { id: it.id }); };
+      var x = document.createElement('span'); x.className = 'x'; x.textContent = '✕';
+      x.onclick = function () { items = items.filter(function (y) { return y !== it; }); render(); send('suppr', { id: it.id }); };
+      li.appendChild(t); li.appendChild(x); ul.appendChild(li);
+    });
+  }
+
+  var ui = { reply: reply, onList: apply, onMemo: function (m) { $('memo').textContent = m || 'Rien pour le moment'; },
+             confirm: function (m) { return window.confirm(m); } };
+
+  function micTap() {
+    var ok = Assistant.listen(function (txt) { reply('« ' + txt + ' »'); Assistant.run(txt, ui); }, function (st) {
+      $('mic').className = st === 'ecoute' ? 'listening' : '';
+      if (st === 'ecoute') reply('Je t\'écoute…');
+      if (st === 'erreur') reply('Je n\'ai rien entendu, réessaie');
+    });
+    if (!ok) { $('add').focus(); reply('Utilise le micro du clavier'); }
+  }
+  function addTyped() {
+    var v = $('add').value.trim(); if (!v) return;
+    $('add').value = ''; send('ajout', { texte: v, par: 'telephone' });
+  }
+  $('add').addEventListener('keydown', function (e) { if (e.key === 'Enter') addTyped(); });
+
+  function lightsTap(n) { Assistant.lights(n); reply(n === 'tout_on' ? 'J\'allume tout' : 'J\'éteins tout'); }
+  function saveCode() {
+    var v = $('code').value.trim(); if (!v) return;
+    Assistant.store('dash_agenda_code', v); $('code-box').style.display = 'none'; send('liste');
+  }
+
+  send('liste');
+  setInterval(function () { if (!document.hidden) send('liste'); }, 20000);
+  document.addEventListener('visibilitychange', function () { if (!document.hidden) send('liste'); });
+</script>
+</body>
+</html>
