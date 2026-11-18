@@ -143,6 +143,22 @@
       display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
       background-color: #000; opacity: 0.85; z-index: 100;
     }
+    /* TÉLÉPHONE : tout sur une seule colonne, qu'on fait défiler */
+    @media (max-width: 700px) {
+      html, body { overflow: auto; height: auto; }
+      .container { display: flex; flex-direction: column; height: auto; padding: 10px; }
+      .col-left, .col-center, .col-right { display: contents; }
+      .card { height: auto !important; }
+      .c-clock { order: 1; } .c-assist { order: 2; } .c-todo { order: 3; } .c-agenda { order: 4; }
+      .c-maison { order: 5; } .c-meteo { order: 6; } .c-note { order: 7; } .c-raccourcis { order: 8; }
+      #agenda-list { height: auto; max-height: 420px; }
+      #todo-list { height: auto; max-height: none; }
+      #family-note { height: 160px; }
+      #cmd-mic { width: 64px; height: 52px; font-size: 26px; }
+      #cmd-input { height: 52px; width: calc(100% - 72px); font-size: 16px; }
+      #clock-time { font-size: 48px; }
+      #night-veil { display: none !important; }
+    }
   </style>
 </head>
 <body>
@@ -150,13 +166,13 @@
 <div class="container">
   <!-- COLONNE GAUCHE : HORLOGE + METEO + SMART LIFE -->
   <div class="col-left">
-    <div class="card clock-card">
+    <div class="card clock-card c-clock">
       <div class="brand"><img src="https://vergerdeslouves.fr/wp-content/uploads/2023/09/fff.png" alt="Au Verger des Louves" onerror="this.style.display='none'"></div>
       <div><span id="clock-time">00:00</span><span id="clock-sec">00</span></div>
       <div id="clock-date">Chargement...</div>
     </div>
 
-    <div class="card">
+    <div class="card c-meteo">
       <div class="card-title">Météo</div>
       <div class="weather-now">
         <div class="weather-temp" id="w-temp">--°</div>
@@ -169,7 +185,7 @@
       <div class="w-updated" id="w-updated"></div>
     </div>
 
-    <div class="card">
+    <div class="card c-maison">
       <div class="card-title">Maison</div>
       <div class="smart-grid">
         <div class="smart-btn" onclick="triggerSmart('tout_on', this)">💡 Tout allumer</div>
@@ -178,7 +194,7 @@
       <div id="smart-status"></div>
     </div>
 
-    <div class="card">
+    <div class="card c-assist">
       <div class="card-title">Assistant</div>
       <div class="cmd-wrap">
         <button id="cmd-mic" onclick="micTap()">🎤</button>
@@ -190,11 +206,11 @@
 
   <!-- COLONNE CENTRALE : AGENDA -->
   <div class="col-center">
-    <div class="card agenda-card">
+    <div class="card agenda-card c-agenda">
       <div class="card-title">Agenda <span class="ag-legend" id="ag-legend"></span></div>
       <div id="agenda-list"><div class="ag-msg">Chargement de l'agenda...</div></div>
     </div>
-    <div class="card" style="height: 200px;">
+    <div class="card c-raccourcis" style="height: 200px;">
       <div class="card-title">Raccourcis utiles</div>
       <p style="font-size: 14px; color: #dfddd2; line-height: 1.6;">
         • Poubelles jaunes : <b id="trash-next">...</b><br>
@@ -206,7 +222,7 @@
 
   <!-- COLONNE DROITE : LISTE DE COURSES + NOTE -->
   <div class="col-right">
-    <div class="card todo-card">
+    <div class="card todo-card c-todo">
       <div class="card-title">Liste de courses</div>
       <div class="todo-input-wrap">
         <input type="text" id="todo-input" placeholder="Ajouter un article..." autocomplete="off">
@@ -216,7 +232,7 @@
       <button id="todo-clear" onclick="clearDone()">Retirer les articles cochés</button>
     </div>
 
-    <div class="card note-card">
+    <div class="card note-card c-note">
       <div class="card-title">Mémo famille</div>
       <textarea id="family-note" placeholder="Écrire un message pour la famille..."></textarea>
     </div>
@@ -288,7 +304,7 @@
     $('clock-sec').innerHTML = pad(now.getSeconds());
     $('clock-date').innerHTML = jours[now.getDay()] + ' ' + now.getDate() + ' ' + mois[now.getMonth()];
 
-    var veil = isNight(now.getHours()) && now.getTime() > awakeUntil;
+    var veil = isNight(now.getHours()) && now.getTime() > awakeUntil && window.innerWidth > 700;
     $('night-veil').style.display = veil ? 'block' : 'none';
 
     // Recharge la page chaque nuit à 3h00 (évite que le vieil iPad sature sa mémoire)
@@ -657,7 +673,7 @@
   }
   $('cmd-input').onkeydown = function (e) { if (e.keyCode === 13) cmdRun(); };
 
-  window.ECRAN = { script: CONFIG.agendaScript, smart: CONFIG.smart, appareil: 'ecran' };
+  window.ECRAN = { script: CONFIG.agendaScript, smart: CONFIG.smart, appareil: window.innerWidth > 700 ? 'ecran' : 'telephone' };
 
   /* Démarrage une fois assistant.js chargé */
   window.onload = function () {
