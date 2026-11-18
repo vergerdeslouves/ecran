@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="apple-mobile-web-app-title" content="Dashboard">
+  <title>Au Verger des Louves - Écran mural</title>
+  <link rel="preconnect" href="https://fonts.gstatic.com">
+  <link href="https://fonts.googleapis.com/css?family=Readex+Pro:400,700|Fraunces:600&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+    html, body {
+      width: 100%; height: 100%;
+      background-color: #091b18; color: #f0eee5;
+      font-family: 'Readex Pro', -apple-system, Helvetica, Arial, sans-serif;
+      overflow: hidden;
+    }
+    .container { width: 100%; height: 100%; padding: 12px; display: table; table-layout: fixed; }
+    .col-left   { display: table-cell; width: 36%; vertical-align: top; padding-right: 12px; }
+    .col-center { display: table-cell; width: 34%; vertical-align: top; padding-right: 12px; }
+    .col-right  { display: table-cell; width: 30%; vertical-align: top; }
+    .card {
+      background-color: #10372d; border-radius: 14px; padding: 14px;
+      margin-bottom: 12px; border: 1px solid #1d4a3e;
+    }
+    .card-title {
+      font-family: 'Fraunces', Georgia, serif; font-size: 16px; letter-spacing: 0.5px;
+      color: #b9b58d; margin-bottom: 10px; font-weight: 600;
+    }
+
+    /* HORLOGE */
+    .clock-card { text-align: center; padding: 14px 10px 18px; }
+    .brand { overflow: hidden; margin-bottom: 10px; }
+    .brand img { height: 46px; vertical-align: middle; }
+    .brand span { font-family: 'Fraunces', Georgia, serif; font-size: 18px; color: #f0eee5; vertical-align: middle; margin-left: 8px; }
+    #clock-time { font-size: 56px; font-weight: 700; letter-spacing: 2px; color: #f0eee5; line-height: 1; }
+    #clock-sec { font-size: 24px; color: #aed100; vertical-align: top; margin-left: 4px; }
+    #clock-date { font-size: 17px; color: #dfddd2; margin-top: 8px; }
+    #clock-date:first-letter { text-transform: uppercase; }
+
+    /* METEO */
+    .weather-now { overflow: hidden; margin-bottom: 12px; padding-bottom: 10px; border-bottom: 1px solid #1d4a3e; }
+    .weather-temp { float: left; font-size: 44px; font-weight: bold; color: #aed100; }
+    .weather-desc { float: right; text-align: right; padding-top: 6px; }
+    .weather-city { font-size: 16px; font-weight: bold; }
+    .weather-condition { font-size: 14px; color: #dfddd2; margin-top: 3px; }
+    .forecast-row { overflow: hidden; padding: 5px 0; font-size: 15px; }
+    .f-day { float: left; width: 45%; text-transform: capitalize; }
+    .f-icon { float: left; width: 25%; text-align: center; }
+    .f-temps { float: right; width: 30%; text-align: right; color: #dfddd2; }
+    .w-updated { font-size: 11px; color: #b9b58d; text-align: right; margin-top: 4px; }
+
+    /* SMART LIFE */
+    .smart-grid { overflow: hidden; }
+    .smart-btn {
+      float: left; width: 48%; margin-bottom: 8px; padding: 14px 8px;
+      background-color: #091b18; border: 1px solid #1d4a3e; border-radius: 10px;
+      color: #f0eee5; font-size: 15px; font-weight: bold; text-align: center; cursor: pointer;
+    }
+    .smart-btn:nth-child(odd) { margin-right: 4%; }
+    .smart-btn:active, .smart-btn.sent { background-color: #aed100; border-color: #aed100; color: #091b18; }
+    #smart-status { clear: both; font-size: 12px; color: #aed100; text-align: center; height: 16px; }
+
+    /* AGENDA */
+    .agenda-card { height: 515px; }
+    .agenda-frame { width: 100%; height: 465px; border: none; border-radius: 8px; background-color: #f0eee5; }
+    .agenda-empty {
+      height: 465px; border-radius: 8px; background-color: #091b18; border: 1px dashed #1d4a3e;
+      color: #b9b58d; font-size: 14px; text-align: center; padding-top: 200px;
+    }
+
+    /* LISTE DE COURSES */
+    .todo-card { height: 430px; }
+    .todo-input-wrap { overflow: hidden; margin-bottom: 10px; }
+    #todo-input {
+      float: left; width: 74%; padding: 10px; font-size: 16px; border-radius: 8px;
+      border: 1px solid #1d4a3e; background-color: #091b18; color: #f0eee5;
+      font-family: inherit; -webkit-appearance: none;
+    }
+    #todo-add {
+      float: right; width: 23%; padding: 10px 0; font-size: 18px; font-weight: bold;
+      border-radius: 8px; border: none; background-color: #aed100; color: #091b18;
+      -webkit-appearance: none;
+    }
+    #todo-list { list-style: none; height: 300px; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+    .todo-item { padding: 10px 8px; border-bottom: 1px solid #1d4a3e; font-size: 16px; overflow: hidden; }
+    .todo-text { float: left; width: 82%; }
+    .todo-item.done .todo-text { text-decoration: line-through; color: #b9b58d; }
+    .todo-del { float: right; color: #b56953; font-weight: bold; padding: 0 6px; }
+    #todo-clear {
+      display: block; width: 100%; margin-top: 6px; padding: 6px; font-size: 12px;
+      color: #b9b58d; background: none; border: 1px solid #1d4a3e; border-radius: 8px;
+      font-family: inherit; -webkit-appearance: none;
+    }
+
+    /* NOTE FAMILIALE */
+    .note-card { height: 280px; }
+    #family-note {
+      width: 100%; height: 225px; background-color: #091b18; border: 1px solid #1d4a3e;
+      border-radius: 8px; color: #f0eee5; font-size: 16px; padding: 10px; resize: none;
+      font-family: inherit; -webkit-appearance: none;
+    }
+
+    /* MODE NUIT : voile sombre, un appui le retire 1 minute */
+    #night-veil {
+      display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background-color: #000; opacity: 0.85; z-index: 100;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <!-- COLONNE GAUCHE : HORLOGE + METEO + SMART LIFE -->
+  <div class="col-left">
+    <div class="card clock-card">
+      <div class="brand"><img src="https://vergerdeslouves.fr/wp-content/uploads/2023/09/fff.png" alt="" onerror="this.style.display='none'"><span>Au Verger des Louves</span></div>
+      <div><span id="clock-time">00:00</span><span id="clock-sec">00</span></div>
+      <div id="clock-date">Chargement...</div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Météo</div>
+      <div class="weather-now">
+        <div class="weather-temp" id="w-temp">--°</div>
+        <div class="weather-desc">
+          <div class="weather-city">Helfrantzkirch</div>
+          <div class="weather-condition" id="w-cond">Actualisation...</div>
+        </div>
+      </div>
+      <div id="w-forecast"></div>
+      <div class="w-updated" id="w-updated"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Maison</div>
+      <div class="smart-grid">
+        <div class="smart-btn" onclick="triggerSmart('salon', this)">💡 Salon</div>
+        <div class="smart-btn" onclick="triggerSmart('cuisine', this)">🍳 Cuisine</div>
+        <div class="smart-btn" onclick="triggerSmart('tout_off', this)">🌙 Tout éteindre</div>
+        <div class="smart-btn" onclick="triggerSmart('chauffage', this)">🔥 Chauffage</div>
+      </div>
+      <div id="smart-status"></div>
+    </div>
+  </div>
+
+  <!-- COLONNE CENTRALE : AGENDA -->
+  <div class="col-center">
+    <div class="card agenda-card">
+      <div class="card-title">Agenda familial</div>
+      <div id="agenda-slot"></div>
+    </div>
+    <div class="card" style="height: 200px;">
+      <div class="card-title">Raccourcis utiles</div>
+      <p style="font-size: 14px; color: #dfddd2; line-height: 1.6;">
+        • Poubelles jaunes : <b id="trash-next">...</b><br>
+        • Pharmacie de garde : <b>32 37</b><br>
+        • Urgences : <b>15 / 112</b>
+      </p>
+    </div>
+  </div>
+
+  <!-- COLONNE DROITE : LISTE DE COURSES + NOTE -->
+  <div class="col-right">
+    <div class="card todo-card">
+      <div class="card-title">Liste de courses</div>
+      <div class="todo-input-wrap">
+        <input type="text" id="todo-input" placeholder="Ajouter un article..." autocomplete="off">
+        <button id="todo-add" onclick="addTodo()">+</button>
+      </div>
+      <ul id="todo-list"></ul>
+      <button id="todo-clear" onclick="clearDone()">Retirer les articles cochés</button>
+    </div>
+
+    <div class="card note-card">
+      <div class="card-title">Mémo famille</div>
+      <textarea id="family-note" placeholder="Écrire un message pour la famille..."></textarea>
+    </div>
+  </div>
+</div>
+
+<div id="night-veil" onclick="wakeUp()"></div>
+
+<script>
+  /* =========================================================
+     RÉGLAGES — seule partie à modifier
+     ========================================================= */
+  var CONFIG = {
+    // Coordonnées pour la météo (Helfrantzkirch)
+    lat: 47.608,
+    lon: 7.416,
+
+    // Lien d'intégration Google Agenda (Paramètres de l'agenda > "Intégrer l'agenda")
+    // Laisser vide tant qu'on ne l'a pas.
+    agendaUrl: 'https://calendar.google.com/calendar/embed?hl=fr&ctz=Europe%2FParis&mode=AGENDA'
+      + '&showTitle=0&showPrint=0&showCalendars=0&showTz=0&showNav=1&showDate=1&showTabs=1'
+      + '&src=benauboulo%40gmail.com&color=%230B8043'
+      + '&src=2cjpa2npj2kkcf9pteoror6n6dgnl3rp%40import.calendar.google.com&color=%23F4511E'
+      + '&src=n35dfhv4o3cp83v3125v4n9ter7orla9%40import.calendar.google.com&color=%238E24AA'
+      + '&src=c63fed9bd5e8f0fc7e8a37d7014c8e85c6e43ef81d127d1ad87169a2d36a44cf%40group.calendar.google.com&color=%23039BE5',
+
+    // Liens de déclenchement des lumières (un par bouton). Laisser vide = bouton inactif.
+    smart: {
+      salon: '',
+      cuisine: '',
+      tout_off: '',
+      chauffage: ''
+    },
+
+    // Poubelles : un passage de référence (année, mois, jour) et l'intervalle en jours
+    trashRef: [2026, 11, 17],
+    trashEvery: 14,
+
+    // Mode nuit : voile sombre entre ces heures (mettre -1 pour désactiver)
+    nightStart: 22,
+    nightEnd: 6
+  };
+
+  /* --- Outils --- */
+  var jours = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'];
+  var mois = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
+
+  function pad(n) { return n < 10 ? '0' + n : '' + n; }
+  function $(id) { return document.getElementById(id); }
+
+  function store(key, value) {
+    try { localStorage.setItem(key, value); } catch (e) {}
+  }
+  function load(key) {
+    try { return localStorage.getItem(key); } catch (e) { return null; }
+  }
+
+  /* --- 1. HORLOGE + MODE NUIT + RECHARGEMENT QUOTIDIEN --- */
+  var awakeUntil = 0;
+
+  function isNight(h) {
+    if (CONFIG.nightStart < 0) return false;
+    if (CONFIG.nightStart > CONFIG.nightEnd) return h >= CONFIG.nightStart || h < CONFIG.nightEnd;
+    return h >= CONFIG.nightStart && h < CONFIG.nightEnd;
+  }
+
+  function wakeUp() {
+    awakeUntil = new Date().getTime() + 60 * 1000;
+    $('night-veil').style.display = 'none';
+  }
+
+  function updateClock() {
+    var now = new Date();
+    $('clock-time').innerHTML = pad(now.getHours()) + ':' + pad(now.getMinutes());
+    $('clock-sec').innerHTML = pad(now.getSeconds());
+    $('clock-date').innerHTML = jours[now.getDay()] + ' ' + now.getDate() + ' ' + mois[now.getMonth()];
+
+    var veil = isNight(now.getHours()) && now.getTime() > awakeUntil;
+    $('night-veil').style.display = veil ? 'block' : 'none';
+
+    // Recharge la page chaque nuit à 3h00 (évite que le vieil iPad sature sa mémoire)
+    if (now.getHours() === 3 && now.getMinutes() === 0 && now.getSeconds() === 0) {
+      location.reload();
+    }
+  }
+  setInterval(updateClock, 1000);
+  updateClock();
+
+  /* --- 1b. POUBELLES (mardi matin, tous les 15 jours) --- */
+  function updateTrash() {
+    var DAY = 24 * 60 * 60 * 1000;
+    var now = new Date();
+    var today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    var ref = new Date(CONFIG.trashRef[0], CONFIG.trashRef[1] - 1, CONFIG.trashRef[2]);
+    var diff = Math.round((today - ref) / DAY);
+    var k = Math.ceil(diff / CONFIG.trashEvery);
+    var next = new Date(ref.getFullYear(), ref.getMonth(), ref.getDate() + k * CONFIG.trashEvery);
+    var days = Math.round((next - today) / DAY);
+    var el = $('trash-next');
+    var label = jours[next.getDay()] + ' ' + (next.getDate() === 1 ? '1er' : next.getDate()) + ' ' + mois[next.getMonth()];
+    if (days === 0) { el.innerHTML = "aujourd'hui !"; el.style.color = '#b56953'; }
+    else if (days === 1) { el.innerHTML = 'demain matin, à sortir ce soir !'; el.style.color = '#aed100'; }
+    else { el.innerHTML = label + ' (dans ' + days + ' jours)'; el.style.color = ''; }
+  }
+  updateTrash();
+  setInterval(updateTrash, 10 * 60 * 1000);
+
+  /* --- 2. METEO (Open-Meteo, gratuit, sans clé) --- */
+  function getWeatherLabel(code) {
+    if (code === 0) return '☀️ Ensoleillé';
+    if (code <= 3) return '⛅ Nuageux';
+    if (code <= 48) return '🌫️ Brouillard';
+    if (code <= 67) return '🌧️ Pluie';
+    if (code <= 77) return '❄️ Neige';
+    if (code <= 82) return '🌦️ Averses';
+    if (code <= 86) return '❄️ Averses de neige';
+    return '⛈️ Orage';
+  }
+
+  // "2026-11-19" -> date locale (évite les décalages de fuseau sur vieux Safari)
+  function parseDay(str) {
+    var p = str.split('-');
+    return new Date(parseInt(p[0], 10), parseInt(p[1], 10) - 1, parseInt(p[2], 10));
+  }
+
+  function fetchWeather() {
+    var url = 'https://api.open-meteo.com/v1/forecast'
+      + '?latitude=' + CONFIG.lat + '&longitude=' + CONFIG.lon
+      + '&current_weather=true'
+      + '&daily=weathercode,temperature_2m_max,temperature_2m_min'
+      + '&timezone=Europe%2FParis&forecast_days=4';
+
+    var xhr = new XMLHttpRequest();
+    xhr.open('GET', url, true);
+    xhr.timeout = 15000;
+    xhr.onreadystatechange = function () {
+      if (xhr.readyState !== 4) return;
+      if (xhr.status !== 200) {
+        $('w-cond').innerHTML = 'Météo indisponible';
+        return;
+      }
+      try {
+        var data = JSON.parse(xhr.responseText);
+        var current = data.current_weather;
+        $('w-temp').innerHTML = Math.round(current.temperature) + '°';
+        $('w-cond').innerHTML = getWeatherLabel(current.weathercode);
+
+        var html = '';
+        for (var i = 1; i <= 3; i++) {
+          var d = parseDay(data.daily.time[i]);
+          var dayName = i === 1 ? 'demain' : jours[d.getDay()];
+          var icon = getWeatherLabel(data.daily.weathercode[i]).split(' ')[0];
+          var tmin = Math.round(data.daily.temperature_2m_min[i]);
+          var tmax = Math.round(data.daily.temperature_2m_max[i]);
+          html += '<div class="forecast-row">'
+            + '<div class="f-day">' + dayName + '</div>'
+            + '<div class="f-icon">' + icon + '</div>'
+            + '<div class="f-temps">' + tmin + '° / ' + tmax + '°</div>'
+            + '</div>';
+        }
+        $('w-forecast').innerHTML = html;
+
+        var n = new Date();
+        $('w-updated').innerHTML = 'Mis à jour à ' + pad(n.getHours()) + ':' + pad(n.getMinutes());
+      } catch (e) {
+        $('w-cond').innerHTML = 'Météo indisponible';
+      }
+    };
+    xhr.send();
+  }
+  fetchWeather();
+  setInterval(fetchWeather, 15 * 60 * 1000); // toutes les 15 min
+
+  /* --- 3. AGENDA --- */
+  (function initAgenda() {
+    var slot = $('agenda-slot');
+    if (CONFIG.agendaUrl) {
+      slot.innerHTML = '<iframe class="agenda-frame" src="' + CONFIG.agendaUrl + '"></iframe>';
+    } else {
+      slot.innerHTML = '<div class="agenda-empty">Lien Google Agenda à renseigner</div>';
+    }
+  })();
+
+  /* --- 4. LUMIÈRES --- */
+  var statusTimer = null;
+
+  function showStatus(msg, color) {
+    var el = $('smart-status');
+    el.style.color = color || '#aed100';
+    el.innerHTML = msg;
+    clearTimeout(statusTimer);
+    statusTimer = setTimeout(function () { el.innerHTML = ''; }, 3000);
+  }
+
+  function triggerSmart(name, btn) {
+    var url = CONFIG.smart[name];
+    if (!url) {
+      showStatus('Bouton pas encore configuré', '#dfddd2');
+      return;
+    }
+    // Appel "image" : contourne les blocages CORS, la requête part quand même
+    var ping = new Image();
+    ping.src = url + (url.indexOf('?') === -1 ? '?' : '&') + '_t=' + new Date().getTime();
+    btn.className = 'smart-btn sent';
+    setTimeout(function () { btn.className = 'smart-btn'; }, 600);
+    showStatus('Commande envoyée ✓');
+  }
+
+  /* --- 5. LISTE DE COURSES (gardée sur l'iPad) --- */
+  var todos = [];
+  try { todos = JSON.parse(load('dash_todos')) || []; } catch (e) { todos = []; }
+
+  function saveTodos() { store('dash_todos', JSON.stringify(todos)); }
+
+  function renderTodos() {
+    var list = $('todo-list');
+    list.innerHTML = '';
+    for (var i = 0; i < todos.length; i++) {
+      (function (index) {
+        var li = document.createElement('li');
+        li.className = 'todo-item' + (todos[index].done ? ' done' : '');
+
+        var txt = document.createElement('span');
+        txt.className = 'todo-text';
+        txt.textContent = todos[index].text;
+        txt.onclick = function () {
+          todos[index].done = !todos[index].done;
+          saveTodos(); renderTodos();
+        };
+
+        var del = document.createElement('span');
+        del.className = 'todo-del';
+        del.textContent = '✕';
+        del.onclick = function () {
+          todos.splice(index, 1);
+          saveTodos(); renderTodos();
+        };
+
+        li.appendChild(txt);
+        li.appendChild(del);
+        list.appendChild(li);
+      })(i);
+    }
+  }
+
+  function addTodo() {
+    var input = $('todo-input');
+    var val = input.value.replace(/^\s+|\s+$/g, '');
+    if (!val) return;
+    todos.push({ text: val, done: false });
+    input.value = '';
+    saveTodos(); renderTodos();
+    input.blur(); // referme le clavier
+  }
+
+  function clearDone() {
+    var kept = [];
+    for (var i = 0; i < todos.length; i++) if (!todos[i].done) kept.push(todos[i]);
+    todos = kept;
+    saveTodos(); renderTodos();
+  }
+
+  $('todo-input').onkeydown = function (e) {
+    if (e.keyCode === 13) addTodo();
+  };
+  renderTodos();
+
+  /* --- 6. MÉMO FAMILLE (gardé sur l'iPad) --- */
+  var note = $('family-note');
+  note.value = load('dash_note') || '';
+  note.oninput = function () { store('dash_note', note.value); };
+</script>
+</body>
+</html>
