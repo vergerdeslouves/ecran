@@ -33,8 +33,7 @@
     /* HORLOGE */
     .clock-card { text-align: center; padding: 14px 10px 18px; }
     .brand { overflow: hidden; margin-bottom: 10px; }
-    .brand img { height: 46px; vertical-align: middle; }
-    .brand span { font-family: 'Fraunces', Georgia, serif; font-size: 18px; color: #f0eee5; vertical-align: middle; margin-left: 8px; }
+    .brand img { width: 88%; height: auto; -webkit-filter: brightness(0) invert(0.94); filter: brightness(0) invert(0.94); }
     #clock-time { font-size: 56px; font-weight: 700; letter-spacing: 2px; color: #f0eee5; line-height: 1; }
     #clock-sec { font-size: 24px; color: #aed100; vertical-align: top; margin-left: 4px; }
     #clock-date { font-size: 17px; color: #dfddd2; margin-top: 8px; }
@@ -116,7 +115,7 @@
   <!-- COLONNE GAUCHE : HORLOGE + METEO + SMART LIFE -->
   <div class="col-left">
     <div class="card clock-card">
-      <div class="brand"><img src="https://vergerdeslouves.fr/wp-content/uploads/2023/09/fff.png" alt="" onerror="this.style.display='none'"><span>Au Verger des Louves</span></div>
+      <div class="brand"><img src="https://vergerdeslouves.fr/wp-content/uploads/2023/09/fff.png" alt="Au Verger des Louves" onerror="this.style.display='none'"></div>
       <div><span id="clock-time">00:00</span><span id="clock-sec">00</span></div>
       <div id="clock-date">Chargement...</div>
     </div>
