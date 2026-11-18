@@ -62,6 +62,20 @@
     .smart-btn:active, .smart-btn.sent { background-color: #aed100; border-color: #aed100; color: #091b18; }
     #smart-status { clear: both; font-size: 12px; color: #aed100; text-align: center; height: 16px; }
 
+    /* ASSISTANT */
+    .cmd-wrap { overflow: hidden; }
+    #cmd-mic {
+      float: left; width: 52px; height: 44px; font-size: 22px; border: none; border-radius: 10px;
+      background-color: #aed100; color: #091b18; -webkit-appearance: none;
+    }
+    #cmd-mic.listening { background-color: #b56953; }
+    #cmd-input {
+      float: right; width: calc(100% - 60px); width: -webkit-calc(100% - 60px); height: 44px; padding: 0 10px;
+      font-size: 15px; border-radius: 10px; border: 1px solid #1d4a3e; background-color: #091b18; color: #f0eee5;
+      font-family: inherit; -webkit-appearance: none;
+    }
+    #cmd-reply { margin-top: 8px; font-size: 13px; color: #dfddd2; min-height: 18px; line-height: 1.4; }
+
     /* AGENDA */
     .agenda-card { height: 515px; }
     .ag-legend { float: right; font-family: 'Readex Pro', -apple-system, Helvetica, Arial, sans-serif; font-size: 11px; font-weight: normal; letter-spacing: 0; padding-top: 3px; }
@@ -162,6 +176,15 @@
         <div class="smart-btn" onclick="triggerSmart('tout_off', this)">🌙 Tout éteindre</div>
       </div>
       <div id="smart-status"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Assistant</div>
+      <div class="cmd-wrap">
+        <button id="cmd-mic" onclick="micTap()">🎤</button>
+        <input type="text" id="cmd-input" placeholder="Ex. : ajoute du lait et des œufs" autocomplete="off">
+      </div>
+      <div id="cmd-reply"></div>
     </div>
   </div>
 
@@ -529,40 +552,42 @@
     showStatus('Commande envoyée ✓');
   }
 
-  /* --- 5. LISTE DE COURSES (gardée sur l'iPad) --- */
+  /* --- 5. LISTE DE COURSES (partagée via le script Google) --- */
   var todos = [];
-  try { todos = JSON.parse(load('dash_todos')) || []; } catch (e) { todos = []; }
+  try { todos = JSON.parse(load('dash_todos_cache')) || []; } catch (e) { todos = []; }
 
-  function saveTodos() { store('dash_todos', JSON.stringify(todos)); }
+  function applyList(d) {
+    if (d && d.liste) {
+      todos = d.liste;
+      store('dash_todos_cache', JSON.stringify(todos));
+      renderTodos();
+    }
+    if (d && typeof d.memo === 'string') applyMemo(d.memo);
+  }
+  function srv(params) {
+    if (window.Assistant) Assistant.api(params, applyList, function () {});
+  }
 
   function renderTodos() {
     var list = $('todo-list');
     list.innerHTML = '';
     for (var i = 0; i < todos.length; i++) {
-      (function (index) {
+      (function (it) {
         var li = document.createElement('li');
-        li.className = 'todo-item' + (todos[index].done ? ' done' : '');
-
+        li.className = 'todo-item' + (it.d ? ' done' : '');
         var txt = document.createElement('span');
         txt.className = 'todo-text';
-        txt.textContent = todos[index].text;
-        txt.onclick = function () {
-          todos[index].done = !todos[index].done;
-          saveTodos(); renderTodos();
-        };
-
+        txt.textContent = it.t;
+        txt.onclick = function () { it.d = !it.d; renderTodos(); srv({ action: 'coche', id: it.id }); };
         var del = document.createElement('span');
         del.className = 'todo-del';
         del.textContent = '✕';
         del.onclick = function () {
-          todos.splice(index, 1);
-          saveTodos(); renderTodos();
+          todos = todos.filter(function (x) { return x !== it; });
+          renderTodos(); srv({ action: 'suppr', id: it.id });
         };
-
-        li.appendChild(txt);
-        li.appendChild(del);
-        list.appendChild(li);
-      })(i);
+        li.appendChild(txt); li.appendChild(del); list.appendChild(li);
+      })(todos[i]);
     }
   }
 
@@ -570,28 +595,89 @@
     var input = $('todo-input');
     var val = input.value.replace(/^\s+|\s+$/g, '');
     if (!val) return;
-    todos.push({ text: val, done: false });
     input.value = '';
-    saveTodos(); renderTodos();
-    input.blur(); // referme le clavier
+    input.blur();
+    todos.push({ id: 'tmp', t: val, d: false });
+    renderTodos();
+    srv({ action: 'ajout', texte: val, par: 'ecran' });
   }
 
   function clearDone() {
     var kept = [];
-    for (var i = 0; i < todos.length; i++) if (!todos[i].done) kept.push(todos[i]);
-    todos = kept;
-    saveTodos(); renderTodos();
+    for (var i = 0; i < todos.length; i++) if (!todos[i].d) kept.push(todos[i]);
+    todos = kept; renderTodos();
+    srv({ action: 'nettoie' });
   }
 
-  $('todo-input').onkeydown = function (e) {
-    if (e.keyCode === 13) addTodo();
-  };
+  $('todo-input').onkeydown = function (e) { if (e.keyCode === 13) addTodo(); };
   renderTodos();
 
-  /* --- 6. MÉMO FAMILLE (gardé sur l'iPad) --- */
+  /* --- 6. MÉMO FAMILLE (partagé) --- */
   var note = $('family-note');
+  var noteTimer = null, noteEditing = false;
   note.value = load('dash_note') || '';
-  note.oninput = function () { store('dash_note', note.value); };
+  function applyMemo(t) {
+    if (noteEditing || document.activeElement === note) return;
+    note.value = t; store('dash_note', t);
+  }
+  note.onfocus = function () { noteEditing = true; };
+  note.onblur = function () { noteEditing = false; };
+  note.oninput = function () {
+    store('dash_note', note.value);
+    clearTimeout(noteTimer);
+    noteTimer = setTimeout(function () { srv({ action: 'memo_ecrire', texte: note.value }); }, 1500);
+  };
+
+  /* --- 7. ASSISTANT (dictée de l'iPad ou micro du navigateur) --- */
+  var cmdUi = {
+    reply: function (t) { $('cmd-reply').innerHTML = esc(t); },
+    onList: applyList,
+    onMemo: applyMemo,
+    confirm: function (m) { return window.confirm(m); }
+  };
+  function cmdRun() {
+    var input = $('cmd-input');
+    var v = input.value.replace(/^\s+|\s+$/g, '');
+    if (!v) return;
+    input.value = '';
+    input.blur();
+    $('cmd-reply').innerHTML = '« ' + esc(v) + ' »';
+    Assistant.run(v, cmdUi);
+  }
+  function micTap() {
+    if (!window.Assistant) return;
+    var started = Assistant.listen(function (t) { $('cmd-input').value = t; cmdRun(); }, function (st) {
+      $('cmd-mic').className = st === 'ecoute' ? 'listening' : '';
+      if (st === 'ecoute') cmdUi.reply('Je t\'écoute…');
+    });
+    if (!started) {
+      $('cmd-input').focus();
+      cmdUi.reply('Touche le micro du clavier, parle, puis « OK ».');
+    }
+  }
+  $('cmd-input').onkeydown = function (e) { if (e.keyCode === 13) cmdRun(); };
+
+  window.ECRAN = { script: CONFIG.agendaScript, smart: CONFIG.smart, appareil: 'ecran' };
+
+  /* Démarrage une fois assistant.js chargé */
+  window.onload = function () {
+    // Reprise unique de l'ancienne liste et de l'ancien mémo gardés sur l'iPad
+    var old = null;
+    try { old = JSON.parse(load('dash_todos')); } catch (e) {}
+    if (old && old.length) {
+      var txt = [];
+      for (var i = 0; i < old.length; i++) if (!old[i].done) txt.push(old[i].text);
+      if (txt.length) srv({ action: 'ajout', texte: txt.join(', '), par: 'ecran' });
+    }
+    try { localStorage.removeItem('dash_todos'); } catch (e) {}
+    Assistant.api({ action: 'liste' }, function (d) {
+      var loc = load('dash_note');
+      if (!d.memo && loc) { srv({ action: 'memo_ecrire', texte: loc }); d.memo = loc; }
+      applyList(d);
+    }, function () {});
+    setInterval(function () { srv({ action: 'liste' }); }, 30 * 1000);
+  };
 </script>
+<script src="assistant.js"></script>
 </body>
 </html>
