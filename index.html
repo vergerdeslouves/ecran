@@ -559,6 +559,14 @@
   try { todos = JSON.parse(load('dash_todos_cache')) || []; } catch (e) { todos = []; }
 
   function applyList(d) {
+    // Première fois sur ce téléphone : indique le canal ntfy à suivre
+    if (d && d.canal && load('dash_canal_vu') !== d.canal) {
+      store('dash_canal_vu', d.canal);
+      setTimeout(function () {
+        window.alert('Notifications : dans l\'appli ntfy, touche « + » et abonne-toi au canal :\n\n' + d.canal +
+                     '\n\n(serveur ntfy.sh par défaut)');
+      }, 300);
+    }
     if (d && d.liste) {
       todos = d.liste;
       store('dash_todos_cache', JSON.stringify(todos));
@@ -601,7 +609,7 @@
     input.blur();
     todos.push({ id: 'tmp', t: val, d: false });
     renderTodos();
-    srv({ action: 'ajout', texte: val, par: 'ecran' });
+    srv({ action: 'ajout', texte: val });
   }
 
   function clearDone() {
@@ -659,7 +667,14 @@
   }
   $('cmd-input').onkeydown = function (e) { if (e.keyCode === 13) cmdRun(); };
 
-  window.ECRAN = { script: CONFIG.agendaScript, smart: CONFIG.smart, appareil: window.innerWidth > 700 ? 'ecran' : 'telephone' };
+  // Sur l'écran mural : 'ecran'. Sur un téléphone : le prénom de la personne (demandé une fois).
+  var monNom = load('dash_nom');
+  if (window.innerWidth <= 700 && !monNom) {
+    monNom = (window.prompt('Ton prénom ? (pour recevoir les notifications des autres)') || '').replace(/^\s+|\s+$/g, '');
+    if (monNom) store('dash_nom', monNom);
+  }
+  window.ECRAN = { script: CONFIG.agendaScript, smart: CONFIG.smart,
+                   appareil: window.innerWidth > 700 ? 'ecran' : (monNom || 'telephone') };
 
   /* Démarrage une fois assistant.js chargé */
   window.onload = function () {
@@ -669,7 +684,7 @@
     if (old && old.length) {
       var txt = [];
       for (var i = 0; i < old.length; i++) if (!old[i].done) txt.push(old[i].text);
-      if (txt.length) srv({ action: 'ajout', texte: txt.join(', '), par: 'ecran' });
+      if (txt.length) srv({ action: 'ajout', texte: txt.join(', ') });
     }
     try { localStorage.removeItem('dash_todos'); } catch (e) {}
     Assistant.api({ action: 'liste' }, function (d) {
