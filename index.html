@@ -64,10 +64,32 @@
 
     /* AGENDA */
     .agenda-card { height: 515px; }
-    .agenda-frame { width: 100%; height: 465px; border: none; border-radius: 8px; background-color: #f0eee5; }
-    .agenda-empty {
-      height: 465px; border-radius: 8px; background-color: #091b18; border: 1px dashed #1d4a3e;
-      color: #b9b58d; font-size: 14px; text-align: center; padding-top: 200px;
+    .ag-legend { float: right; font-family: 'Readex Pro', -apple-system, Helvetica, Arial, sans-serif; font-size: 11px; font-weight: normal; letter-spacing: 0; padding-top: 3px; }
+    .ag-legend span { margin-left: 8px; color: #dfddd2; }
+    .ag-dot { display: inline-block; width: 8px; height: 8px; border-radius: 4px; margin-right: 4px; }
+    #agenda-list { height: 452px; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+    #agenda-list::-webkit-scrollbar { display: none; }
+    .ag-day { font-family: 'Fraunces', Georgia, serif; font-size: 15px; color: #b9b58d; margin: 12px 0 6px; }
+    .ag-day:first-child { margin-top: 0; }
+    .ag-day.today { color: #aed100; }
+    .ag-ev {
+      overflow: hidden; background-color: #091b18; border-radius: 8px; margin-bottom: 6px;
+      padding: 8px 10px; border-left: 4px solid #aed100;
+    }
+    .ag-ev.past { opacity: 0.45; }
+    .ag-time { float: left; width: 58px; font-size: 14px; font-weight: bold; color: #f0eee5; line-height: 1.3; }
+    .ag-time small { display: block; font-size: 11px; font-weight: normal; color: #b9b58d; }
+    .ag-body { margin-left: 62px; }
+    .ag-title { font-size: 15px; line-height: 1.3; color: #f0eee5; }
+    .ag-tag { font-size: 10px; text-transform: uppercase; letter-spacing: 0.8px; margin-top: 2px; }
+    .ag-msg { color: #b9b58d; font-size: 14px; text-align: center; padding-top: 170px; line-height: 1.6; }
+    .ag-msg input {
+      width: 70%; padding: 8px; margin-top: 10px; font-size: 16px; border-radius: 8px; text-align: center;
+      border: 1px solid #1d4a3e; background-color: #091b18; color: #f0eee5; -webkit-appearance: none;
+    }
+    .ag-msg button {
+      margin-top: 8px; padding: 8px 18px; font-size: 15px; border: none; border-radius: 8px;
+      background-color: #aed100; color: #091b18; font-weight: bold; -webkit-appearance: none;
     }
 
     /* LISTE DE COURSES */
@@ -146,8 +168,8 @@
   <!-- COLONNE CENTRALE : AGENDA -->
   <div class="col-center">
     <div class="card agenda-card">
-      <div class="card-title">Agenda familial</div>
-      <div id="agenda-slot"></div>
+      <div class="card-title">Agenda <span class="ag-legend" id="ag-legend"></span></div>
+      <div id="agenda-list"><div class="ag-msg">Chargement de l'agenda...</div></div>
     </div>
     <div class="card" style="height: 200px;">
       <div class="card-title">Raccourcis utiles</div>
@@ -189,14 +211,9 @@
     lat: 47.608,
     lon: 7.416,
 
-    // Lien d'intégration Google Agenda (Paramètres de l'agenda > "Intégrer l'agenda")
-    // Laisser vide tant qu'on ne l'a pas.
-    agendaUrl: 'https://calendar.google.com/calendar/embed?hl=fr&ctz=Europe%2FParis&mode=AGENDA'
-      + '&showTitle=0&showPrint=0&showCalendars=0&showTz=0&showNav=1&showDate=1&showTabs=1'
-      + '&src=benauboulo%40gmail.com&color=%230B8043'
-      + '&src=2cjpa2npj2kkcf9pteoror6n6dgnl3rp%40import.calendar.google.com&color=%23F4511E'
-      + '&src=n35dfhv4o3cp83v3125v4n9ter7orla9%40import.calendar.google.com&color=%238E24AA'
-      + '&src=c63fed9bd5e8f0fc7e8a37d7014c8e85c6e43ef81d127d1ad87169a2d36a44cf%40group.calendar.google.com&color=%23039BE5',
+    // Adresse du script Google qui lit les agendas (Apps Script, "/exec")
+    agendaScript: 'https://script.google.com/macros/s/AKfycbyMVqA25gXgIfVRXzXCMrcoepVy7l8ceXsPXqJRuhsF2SlKxooWwcRqmlOCI_wYM9A/exec',
+    agendaJours: 7,
 
     // Liens de déclenchement des lumières (un par bouton). Laisser vide = bouton inactif.
     // (créés sur virtualsmarthome.xyz/url_routine_trigger, reliés à des routines Alexa)
@@ -344,15 +361,148 @@
   fetchWeather();
   setInterval(fetchWeather, 15 * 60 * 1000); // toutes les 15 min
 
-  /* --- 3. AGENDA --- */
-  (function initAgenda() {
-    var slot = $('agenda-slot');
-    if (CONFIG.agendaUrl) {
-      slot.innerHTML = '<iframe class="agenda-frame" src="' + CONFIG.agendaUrl + '"></iframe>';
-    } else {
-      slot.innerHTML = '<div class="agenda-empty">Lien Google Agenda à renseigner</div>';
+  /* --- 3. AGENDA (lu depuis le script Google, affichage maison) --- */
+  var agData = null;
+
+  // Code d'accès : passé une fois dans l'adresse (?code=...) puis gardé sur l'iPad
+  (function () {
+    var m = /[?&]code=([^&#]+)/.exec(location.search);
+    if (m) {
+      store('dash_agenda_code', decodeURIComponent(m[1]));
+      if (history.replaceState) history.replaceState(null, '', location.pathname);
     }
   })();
+
+  function esc(t) {
+    return String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+  function hm(d) {
+    return d.getHours() + 'h' + (d.getMinutes() ? pad(d.getMinutes()) : '');
+  }
+  // Raccourcit les titres des réservations du site (HBook)
+  function shortTitle(t) {
+    return String(t || '')
+      .replace(/^Au Verger des Louves\s*R[ée]servation\s*[-–]\s*/i, '')
+      .replace(/\s*[-–]\s*Resa\s*:\s*/i, ' · ')
+      .replace(/^\s+|\s+$/g, '');
+  }
+  function dayKey(d) { return d.getFullYear() + '-' + d.getMonth() + '-' + d.getDate(); }
+
+  function agMessage(html) { $('agenda-list').innerHTML = '<div class="ag-msg">' + html + '</div>'; }
+
+  function askCode(msg) {
+    agMessage((msg || 'Code d\'accès de l\'agenda') +
+      '<br><input id="ag-code" type="text" autocomplete="off" autocapitalize="off">' +
+      '<br><button onclick="saveCode()">Valider</button>');
+  }
+  function saveCode() {
+    var v = $('ag-code').value.replace(/^\s+|\s+$/g, '');
+    if (!v) return;
+    store('dash_agenda_code', v);
+    $('ag-code').blur();
+    loadAgenda();
+  }
+
+  function renderAgenda() {
+    if (!agData) return;
+    var now = new Date();
+    var today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    var DAY = 24 * 60 * 60 * 1000;
+    var groups = {}, order = [];
+
+    function add(day, item) {
+      var k = dayKey(day);
+      if (!groups[k]) { groups[k] = { day: day, items: [] }; order.push(k); }
+      groups[k].items.push(item);
+    }
+
+    for (var i = 0; i < agData.ev.length; i++) {
+      var ev = agData.ev[i];
+      var s = new Date(ev.s), f = new Date(ev.f);
+      if (ev.j) {
+        // Journée entière (éventuellement sur plusieurs jours) : affichée chaque jour concerné
+        var d = new Date(s.getFullYear(), s.getMonth(), s.getDate());
+        if (d < today) d = today;
+        var guard = 0;
+        while (d < f && guard < 40) {
+          add(new Date(d.getTime()), ev);
+          d = new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1);
+          guard++;
+        }
+      } else {
+        if (f < today) continue;
+        var sd = new Date(s.getFullYear(), s.getMonth(), s.getDate());
+        add(sd < today ? today : sd, ev);
+      }
+    }
+
+    order.sort(function (a, b) { return groups[a].day - groups[b].day; });
+
+    var html = '';
+    for (var g = 0; g < order.length; g++) {
+      var grp = groups[order[g]];
+      var diff = Math.round((grp.day - today) / DAY);
+      var label = diff === 0 ? "Aujourd'hui" : diff === 1 ? 'Demain'
+        : jours[grp.day.getDay()] + ' ' + (grp.day.getDate() === 1 ? '1er' : grp.day.getDate()) + ' ' + mois[grp.day.getMonth()];
+      label = label.charAt(0).toUpperCase() + label.slice(1);
+      html += '<div class="ag-day' + (diff === 0 ? ' today' : '') + '">' + label + '</div>';
+
+      // Journées entières d'abord, puis par heure
+      grp.items.sort(function (a, b) { return (a.j === b.j) ? a.s - b.s : (a.j ? -1 : 1); });
+      for (var k = 0; k < grp.items.length; k++) {
+        var it = grp.items[k];
+        var st = new Date(it.s), en = new Date(it.f);
+        var past = !it.j && en < now;
+        var time = it.j ? 'Journée' : hm(st) + '<small>' + hm(en) + '</small>';
+        html += '<div class="ag-ev' + (past ? ' past' : '') + '" style="border-left-color:' + it.c + '">'
+          + '<div class="ag-time">' + time + '</div>'
+          + '<div class="ag-body"><div class="ag-title">' + esc(shortTitle(it.t) || '(sans titre)') + '</div>'
+          + '<div class="ag-tag" style="color:' + it.c + '">' + esc(it.n) + '</div></div>'
+          + '</div>';
+      }
+    }
+    if (!html) html = '<div class="ag-msg">Rien de prévu ces prochains jours</div>';
+    $('agenda-list').innerHTML = html;
+
+    var leg = '';
+    for (var l = 0; l < (agData.legende || []).length; l++) {
+      leg += '<span><i class="ag-dot" style="background-color:' + agData.legende[l].c + '"></i>' + esc(agData.legende[l].n) + '</span>';
+    }
+    $('ag-legend').innerHTML = leg;
+  }
+
+  function loadAgenda() {
+    if (!CONFIG.agendaScript) { agMessage('Agenda pas encore relié'); return; }
+    var code = load('dash_agenda_code');
+    if (!code) { askCode(); return; }
+
+    var cb = 'agCb' + new Date().getTime();
+    var script = document.createElement('script');
+    var done = false;
+    var timer = setTimeout(function () { finish(); if (!agData) agMessage('Agenda injoignable, nouvel essai bientôt'); }, 20000);
+
+    function finish() {
+      done = true;
+      clearTimeout(timer);
+      try { delete window[cb]; } catch (e) { window[cb] = undefined; }
+      if (script.parentNode) script.parentNode.removeChild(script);
+    }
+
+    window[cb] = function (data) {
+      if (done) return;
+      finish();
+      if (data && data.erreur === 'code') { askCode('Code incorrect, réessaie'); return; }
+      if (data && data.ev) { agData = data; renderAgenda(); }
+    };
+    script.onerror = function () { if (done) return; finish(); if (!agData) agMessage('Agenda injoignable, nouvel essai bientôt'); };
+    script.src = CONFIG.agendaScript + '?code=' + encodeURIComponent(code)
+      + '&jours=' + CONFIG.agendaJours + '&callback=' + cb + '&_t=' + new Date().getTime();
+    document.body.appendChild(script);
+  }
+
+  loadAgenda();
+  setInterval(loadAgenda, 10 * 60 * 1000);   // nouvelles données toutes les 10 min
+  setInterval(renderAgenda, 60 * 1000);      // grise les rendez-vous passés
 
   /* --- 4. LUMIÈRES --- */
   var statusTimer = null;
