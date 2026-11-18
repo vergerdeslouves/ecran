@@ -20,10 +20,28 @@
     }
   })();
 
-  /* ---------- Appels au script Google (JSONP, marche partout) ---------- */
+  /* ---------- Appels au script Google ----------
+   * 1) fetch SANS les cookies Google : marche même si le téléphone est connecté
+   *    à un compte Google que le script refuse ("Impossible d'ouvrir le fichier").
+   * 2) si fetch n'est pas possible, repli en JSONP (vieux iPad). */
   function api(params, ok, fail) {
     var code = load('dash_agenda_code');
     if (!code) { if (fail) fail('code'); return; }
+    if (window.fetch) {
+      var q = '?code=' + encodeURIComponent(code) + '&_t=' + new Date().getTime();
+      for (var k in params) if (params.hasOwnProperty(k)) q += '&' + k + '=' + encodeURIComponent(params[k]);
+      fetch(E.script + q, { credentials: 'omit', cache: 'no-store' })
+        .then(function (r) { if (!r.ok) throw new Error('http'); return r.json(); })
+        .then(function (data) {
+          if (data && data.erreur === 'code') { if (fail) fail('code'); return; }
+          if (ok) ok(data);
+        }, function () { jsonp(params, ok, fail, code); });
+      return;
+    }
+    jsonp(params, ok, fail, code);
+  }
+
+  function jsonp(params, ok, fail, code) {
     var cb = 'apiCb' + new Date().getTime() + Math.floor(Math.random() * 1000);
     var s = document.createElement('script');
     var done = false;
