@@ -27,6 +27,10 @@
   function api(params, ok, fail) {
     var code = load('dash_agenda_code');
     if (!code) { if (fail) fail('code'); return; }
+    // Qui fait l'action (pour les notifications des autres)
+    var p2 = {}; for (var x in params) if (params.hasOwnProperty(x)) p2[x] = params[x];
+    if (!p2.par && E.appareil) p2.par = E.appareil;
+    params = p2;
     if (window.fetch) {
       var q = '?code=' + encodeURIComponent(code) + '&_t=' + new Date().getTime();
       for (var k in params) if (params.hasOwnProperty(k)) q += '&' + k + '=' + encodeURIComponent(params[k]);
@@ -149,7 +153,7 @@
       }, function (why) { say(why === 'code' ? 'Code d\'accès manquant' : 'Je n\'arrive pas à joindre la liste'); });
     };
     switch (c.type) {
-      case 'ajout':   return byServer({ action: 'ajout', texte: c.texte, par: E.appareil || '' });
+      case 'ajout':   return byServer({ action: 'ajout', texte: c.texte });
       case 'retire':  return byServer({ action: 'retire', texte: c.texte });
       case 'annule':  return byServer({ action: 'annule' });
       case 'nettoie': return byServer({ action: 'nettoie' });
