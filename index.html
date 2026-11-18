@@ -54,7 +54,7 @@
     /* SMART LIFE */
     .smart-grid { overflow: hidden; }
     .smart-btn {
-      float: left; width: 48%; margin-bottom: 8px; padding: 14px 8px;
+      float: left; width: 48%; margin-bottom: 8px; padding: 22px 8px;
       background-color: #091b18; border: 1px solid #1d4a3e; border-radius: 10px;
       color: #f0eee5; font-size: 15px; font-weight: bold; text-align: center; cursor: pointer;
     }
@@ -136,10 +136,8 @@
     <div class="card">
       <div class="card-title">Maison</div>
       <div class="smart-grid">
-        <div class="smart-btn" onclick="triggerSmart('salon', this)">💡 Salon</div>
-        <div class="smart-btn" onclick="triggerSmart('cuisine', this)">🍳 Cuisine</div>
+        <div class="smart-btn" onclick="triggerSmart('tout_on', this)">💡 Tout allumer</div>
         <div class="smart-btn" onclick="triggerSmart('tout_off', this)">🌙 Tout éteindre</div>
-        <div class="smart-btn" onclick="triggerSmart('chauffage', this)">🔥 Chauffage</div>
       </div>
       <div id="smart-status"></div>
     </div>
@@ -201,11 +199,10 @@
       + '&src=c63fed9bd5e8f0fc7e8a37d7014c8e85c6e43ef81d127d1ad87169a2d36a44cf%40group.calendar.google.com&color=%23039BE5',
 
     // Liens de déclenchement des lumières (un par bouton). Laisser vide = bouton inactif.
+    // (créés sur virtualsmarthome.xyz/url_routine_trigger, reliés à des routines Alexa)
     smart: {
-      salon: '',
-      cuisine: '',
-      tout_off: '',
-      chauffage: ''
+      tout_on: 'https://www.virtualsmarthome.xyz/url_routine_trigger/activate.php?trigger=d163655f-91b0-4522-b284-7ad8ae1281c7&token=53b88e84-94d5-460a-933e-343fef634c79&response=json',
+      tout_off: 'https://www.virtualsmarthome.xyz/url_routine_trigger/activate.php?trigger=3cd3bd73-8621-4efe-9a7c-02cbcd847f8a&token=3bf632ec-0e47-41ad-ad3f-1a36a1317ae3&response=json'
     },
 
     // Poubelles : un passage de référence (année, mois, jour) et l'intervalle en jours
