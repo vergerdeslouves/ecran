@@ -511,6 +511,10 @@
     for (var l = 0; l < (agData.legende || []).length; l++) {
       leg += '<span><i class="ag-dot" style="background-color:' + agData.legende[l].c + '"></i>' + esc(agData.legende[l].n) + '</span>';
     }
+    if (agData.maj) {
+      var mj = new Date(agData.maj);
+      leg += '<span style="color:#b9b58d">· maj ' + pad(mj.getHours()) + ':' + pad(mj.getMinutes()) + '</span>';
+    }
     $('ag-legend').innerHTML = leg;
   }
 
