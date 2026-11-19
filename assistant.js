@@ -31,15 +31,24 @@
     var p2 = {}; for (var x in params) if (params.hasOwnProperty(x)) p2[x] = params[x];
     if (!p2.par && E.appareil) p2.par = E.appareil;
     params = p2;
-    if (window.fetch) {
+    // Vieux iPad / iPhone (iOS 12 et avant) : JSONP, qui y fonctionne bien
+    var vieilIOS = /(iPad|iPhone|iPod).*OS (9|10|11|12)_/.test(navigator.userAgent);
+    if (window.fetch && !vieilIOS) {
       var q = '?code=' + encodeURIComponent(code) + '&_t=' + new Date().getTime();
       for (var k in params) if (params.hasOwnProperty(k)) q += '&' + k + '=' + encodeURIComponent(params[k]);
+      var fini = false;
+      // Si fetch ne répond pas en 12 s, on bascule en JSONP
+      var minuteur = setTimeout(function () { if (fini) return; fini = true; jsonp(params, ok, fail, code); }, 12000);
       fetch(E.script + q, { credentials: 'omit', cache: 'no-store' })
         .then(function (r) { if (!r.ok) throw new Error('http'); return r.json(); })
         .then(function (data) {
+          if (fini) return; fini = true; clearTimeout(minuteur);
           if (data && data.erreur === 'code') { if (fail) fail('code'); return; }
           if (ok) ok(data);
-        }, function () { jsonp(params, ok, fail, code); });
+        }, function () {
+          if (fini) return; fini = true; clearTimeout(minuteur);
+          jsonp(params, ok, fail, code);
+        });
       return;
     }
     jsonp(params, ok, fail, code);
