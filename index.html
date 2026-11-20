@@ -81,11 +81,40 @@
     #cmd-reply { margin-top: 8px; font-size: 13px; color: #dfddd2; min-height: 18px; line-height: 1.4; }
 
     /* AGENDA */
-    .agenda-card { height: 515px; }
+    .agenda-card { height: 428px; }
+
+    /* MINUTEUR */
+    .timer-card { height: 152px; }
+    .tm-row { overflow: hidden; margin-bottom: 8px; }
+    #tm-display { float: left; font-size: 40px; font-weight: 700; line-height: 46px; color: #dfddd2; letter-spacing: 1px; }
+    #tm-display.run { color: #aed100; }
+    .tm-ctrl { float: right; }
+    .tm-ctrl button, .tm-presets button {
+      height: 42px; border-radius: 10px; font-size: 18px; font-weight: bold; font-family: inherit;
+      -webkit-appearance: none; cursor: pointer;
+    }
+    .tm-ctrl button { width: 52px; margin-left: 6px; border: none; }
+    #tm-go { background-color: #aed100; color: #091b18; font-size: 16px; }
+    #tm-reset { background-color: #091b18; color: #f0eee5; border: 1px solid #1d4a3e !important; }
+    .tm-presets { overflow: hidden; }
+    .tm-presets button {
+      float: left; width: 18.4%; margin-right: 2%; font-size: 14px;
+      background-color: #091b18; color: #f0eee5; border: 1px solid #1d4a3e;
+    }
+    .tm-presets button:last-child { margin-right: 0; }
+    .tm-presets button:active, .tm-ctrl button:active { background-color: #aed100; color: #091b18; }
+    #tm-alarm {
+      display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 300;
+      background-color: #aed100; color: #091b18; text-align: center; padding-top: 22%;
+      font-size: 48px; font-weight: bold; -webkit-animation: tmflash 1s infinite; animation: tmflash 1s infinite;
+    }
+    #tm-alarm small { display: block; font-size: 20px; font-weight: normal; margin-top: 16px; }
+    @-webkit-keyframes tmflash { 0%, 100% { background-color: #aed100; } 50% { background-color: #b56953; } }
+    @keyframes tmflash { 0%, 100% { background-color: #aed100; } 50% { background-color: #b56953; } }
     .ag-legend { float: right; font-family: 'Readex Pro', -apple-system, Helvetica, Arial, sans-serif; font-size: 11px; font-weight: normal; letter-spacing: 0; padding-top: 3px; }
     .ag-legend span { margin-left: 8px; color: #dfddd2; }
     .ag-dot { display: inline-block; width: 8px; height: 8px; border-radius: 4px; margin-right: 4px; }
-    #agenda-list { height: 452px; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+    #agenda-list { height: 365px; overflow-y: auto; -webkit-overflow-scrolling: touch; }
     #agenda-list::-webkit-scrollbar { display: none; }
     .ag-day { font-family: 'Fraunces', Georgia, serif; font-size: 15px; color: #b9b58d; margin: 12px 0 6px; }
     .ag-day:first-child { margin-top: 0; }
@@ -153,8 +182,9 @@
       .container { display: flex; flex-direction: column; height: auto; padding: 10px; }
       .col-left, .col-center, .col-right { display: contents; }
       .card { height: auto !important; }
-      .c-clock { order: 1; } .c-assist { order: 2; } .c-todo { order: 3; } .c-agenda { order: 4; }
-      .c-maison { order: 5; } .c-meteo { order: 6; } .c-note { order: 7; } .c-raccourcis { order: 8; }
+      .c-clock { order: 1; } .c-assist { order: 2; } .c-timer { order: 3; } .c-todo { order: 4; } .c-agenda { order: 5; }
+      .c-maison { order: 6; } .c-meteo { order: 7; } .c-note { order: 8; } .c-raccourcis { order: 9; }
+      #tm-alarm { padding-top: 45%; font-size: 36px; }
       #agenda-list { height: auto; max-height: 420px; }
       #todo-list { height: auto; max-height: none; }
       #family-note { height: 160px; }
@@ -214,10 +244,22 @@
       <div class="card-title">Agenda <span class="ag-legend" id="ag-legend"></span></div>
       <div id="agenda-list"><div class="ag-msg">Chargement de l'agenda...</div></div>
     </div>
-    <div class="card c-raccourcis" style="height: 200px;">
+    <div class="card timer-card c-timer">
+      <div class="card-title">Minuteur</div>
+      <div class="tm-row">
+        <div id="tm-display">00:00</div>
+        <div class="tm-ctrl">
+          <button id="tm-go" onclick="tmToggle()">▶</button><button id="tm-reset" onclick="tmReset()">↺</button>
+        </div>
+      </div>
+      <div class="tm-presets">
+        <button onclick="tmPreset(1)">+1</button><button onclick="tmPreset(5)">+5</button><button onclick="tmPreset(10)">+10</button><button onclick="tmPreset(15)">+15</button><button onclick="tmPreset(30)">+30</button>
+      </div>
+    </div>
+    <div class="card c-raccourcis" style="height: 112px;">
       <div class="card-title">Raccourcis utiles</div>
-      <p style="font-size: 14px; color: #dfddd2; line-height: 1.6;">
-        • Poubelles jaunes : <b id="trash-next">...</b><br>
+      <p style="font-size: 13px; color: #dfddd2; line-height: 1.45;">
+        • Poubelles : <b id="trash-next">...</b><br>
         • Pharmacie de garde : <b>32 37</b><br>
         • Urgences : <b>15 / 112</b>
       </p>
@@ -244,6 +286,7 @@
 </div>
 
 <div id="night-veil" onclick="wakeUp()"></div>
+<div id="tm-alarm" onclick="tmStopAlarm()">⏰ Minuteur terminé !<small>Touche l'écran pour arrêter</small></div>
 
 <script>
   /* =========================================================
@@ -333,7 +376,7 @@
     var label = jours[next.getDay()] + ' ' + (next.getDate() === 1 ? '1er' : next.getDate()) + ' ' + mois[next.getMonth()];
     if (days === 0) { el.innerHTML = "aujourd'hui !"; el.style.color = '#b56953'; }
     else if (days === 1) { el.innerHTML = 'demain matin, à sortir ce soir !'; el.style.color = '#aed100'; }
-    else { el.innerHTML = label + ' (dans ' + days + ' jours)'; el.style.color = ''; }
+    else { el.innerHTML = label + ' (J-' + days + ')'; el.style.color = ''; }
   }
   updateTrash();
   setInterval(updateTrash, 10 * 60 * 1000);
@@ -533,6 +576,90 @@
   setInterval(loadAgenda, 10 * 60 * 1000);   // nouvelles données toutes les 10 min
   setInterval(renderAgenda, 60 * 1000);      // grise les rendez-vous passés
 
+  /* --- MINUTEUR (local à chaque appareil, survit à un rechargement) --- */
+  var tmEnd = parseInt(load('dash_tm_end') || '0', 10) || 0;     // heure de fin si en marche
+  var tmLeft = parseInt(load('dash_tm_left') || '0', 10) || 0;   // secondes restantes si en pause
+  var tmCtx = null, tmAlarmTimer = null, tmAlarmCount = 0;
+
+  function tmUnlock() {   // le son doit être "débloqué" par un appui (iPad)
+    try {
+      var AC = window.AudioContext || window.webkitAudioContext;
+      if (!tmCtx && AC) tmCtx = new AC();
+      if (tmCtx && tmCtx.state === 'suspended') tmCtx.resume();
+    } catch (e) {}
+  }
+  function tmSave() { store('dash_tm_end', String(tmEnd)); store('dash_tm_left', String(tmLeft)); }
+  function tmRemaining() { return tmEnd ? Math.max(0, Math.ceil((tmEnd - new Date().getTime()) / 1000)) : tmLeft; }
+  function tmFmt(sec) {
+    var h = Math.floor(sec / 3600), m = Math.floor((sec % 3600) / 60), x = sec % 60;
+    return (h ? h + ':' + pad(m) : pad(m)) + ':' + pad(x);
+  }
+  function tmRender() {
+    $('tm-display').innerHTML = tmFmt(tmRemaining());
+    $('tm-display').className = tmEnd ? 'run' : '';
+    $('tm-go').innerHTML = tmEnd ? '❚❚' : '▶';
+  }
+  function tmStart(sec) {
+    tmUnlock(); tmStopAlarm();
+    tmEnd = new Date().getTime() + sec * 1000; tmLeft = 0;
+    tmSave(); tmRender();
+  }
+  // Bouton +N : lance tout de suite si rien n'est réglé, sinon ajoute du temps
+  function tmPreset(min) {
+    tmUnlock();
+    if (tmEnd) tmEnd += min * 60000;
+    else if (tmLeft > 0) tmLeft += min * 60;
+    else { tmStart(min * 60); return; }
+    tmSave(); tmRender();
+  }
+  function tmToggle() {
+    tmUnlock();
+    if (tmEnd) { tmLeft = tmRemaining(); tmEnd = 0; }
+    else if (tmLeft > 0) { tmEnd = new Date().getTime() + tmLeft * 1000; tmLeft = 0; }
+    tmSave(); tmRender();
+  }
+  function tmReset() { tmEnd = 0; tmLeft = 0; tmSave(); tmStopAlarm(); tmRender(); }
+
+  function tmBeep() {
+    if (!tmCtx) return;
+    try {
+      var t = tmCtx.currentTime;
+      for (var i = 0; i < 3; i++) {
+        var o = tmCtx.createOscillator(), g = tmCtx.createGain();
+        o.frequency.value = 880; o.connect(g); g.connect(tmCtx.destination);
+        g.gain.setValueAtTime(0.0001, t + i * 0.25);
+        g.gain.exponentialRampToValueAtTime(0.7, t + i * 0.25 + 0.02);
+        g.gain.exponentialRampToValueAtTime(0.0001, t + i * 0.25 + 0.2);
+        o.start(t + i * 0.25); o.stop(t + i * 0.25 + 0.22);
+      }
+    } catch (e) {}
+  }
+  function tmAlarm() {
+    $('tm-alarm').style.display = 'block';
+    tmAlarmCount = 0; tmBeep();
+    clearInterval(tmAlarmTimer);
+    tmAlarmTimer = setInterval(function () {
+      tmAlarmCount++;
+      if (tmAlarmCount > 120) { tmStopAlarm(); return; }   // s'arrête seul après 2 minutes
+      tmBeep();
+    }, 1000);
+    if (window.Assistant) Assistant.speak('Le minuteur est terminé');
+  }
+  function tmStopAlarm() {
+    clearInterval(tmAlarmTimer); tmAlarmTimer = null;
+    $('tm-alarm').style.display = 'none';
+  }
+  function tmTick() {
+    if (tmEnd && new Date().getTime() >= tmEnd) {
+      var retard = new Date().getTime() - tmEnd;
+      tmEnd = 0; tmLeft = 0; tmSave();
+      if (retard < 5 * 60 * 1000) tmAlarm();   // pas d'alarme pour un minuteur fini depuis longtemps
+    }
+    tmRender();
+  }
+  setInterval(tmTick, 500);
+  tmRender();
+
   /* --- 4. LUMIÈRES --- */
   var statusTimer = null;
 
@@ -647,7 +774,12 @@
     reply: function (t) { $('cmd-reply').innerHTML = esc(t); },
     onList: applyList,
     onMemo: applyMemo,
-    confirm: function (m) { return window.confirm(m); }
+    confirm: function (m) { return window.confirm(m); },
+    timer: function (act, sec) {
+      if (act === 'start') tmStart(sec);
+      else if (act === 'stop') tmReset();
+      return tmEnd ? tmRemaining() : 0;
+    }
   };
   function cmdRun() {
     var input = $('cmd-input');
