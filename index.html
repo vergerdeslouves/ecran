@@ -81,7 +81,7 @@
     #cmd-reply { margin-top: 8px; font-size: 13px; color: #dfddd2; min-height: 18px; line-height: 1.4; }
 
     /* AGENDA */
-    .agenda-card { height: 428px; }
+    .agenda-card { height: 515px; }
 
     /* MINUTEUR */
     .timer-card { height: 152px; }
@@ -114,7 +114,7 @@
     .ag-legend { float: right; font-family: 'Readex Pro', -apple-system, Helvetica, Arial, sans-serif; font-size: 11px; font-weight: normal; letter-spacing: 0; padding-top: 3px; }
     .ag-legend span { margin-left: 8px; color: #dfddd2; }
     .ag-dot { display: inline-block; width: 8px; height: 8px; border-radius: 4px; margin-right: 4px; }
-    #agenda-list { height: 365px; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+    #agenda-list { height: 452px; overflow-y: auto; -webkit-overflow-scrolling: touch; }
     #agenda-list::-webkit-scrollbar { display: none; }
     .ag-day { font-family: 'Fraunces', Georgia, serif; font-size: 15px; color: #b9b58d; margin: 12px 0 6px; }
     .ag-day:first-child { margin-top: 0; }
@@ -256,13 +256,8 @@
         <button onclick="tmPreset(1)">+1</button><button onclick="tmPreset(5)">+5</button><button onclick="tmPreset(10)">+10</button><button onclick="tmPreset(15)">+15</button><button onclick="tmPreset(30)">+30</button>
       </div>
     </div>
-    <div class="card c-raccourcis" style="height: 112px;">
-      <div class="card-title">Raccourcis utiles</div>
-      <p style="font-size: 13px; color: #dfddd2; line-height: 1.45;">
-        • Poubelles : <b id="trash-next">...</b><br>
-        • Pharmacie de garde : <b>32 37</b><br>
-        • Urgences : <b>15 / 112</b>
-      </p>
+    <div class="card c-raccourcis" style="height: 48px; padding: 12px 14px;">
+      <p style="font-size: 14px; color: #dfddd2; line-height: 22px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">🗑️ Poubelles : <b id="trash-next">...</b></p>
     </div>
   </div>
 
@@ -375,7 +370,7 @@
     var el = $('trash-next');
     var label = jours[next.getDay()] + ' ' + (next.getDate() === 1 ? '1er' : next.getDate()) + ' ' + mois[next.getMonth()];
     if (days === 0) { el.innerHTML = "aujourd'hui !"; el.style.color = '#b56953'; }
-    else if (days === 1) { el.innerHTML = 'demain matin, à sortir ce soir !'; el.style.color = '#aed100'; }
+    else if (days === 1) { el.innerHTML = 'demain, à sortir ce soir !'; el.style.color = '#aed100'; }
     else { el.innerHTML = label + ' (J-' + days + ')'; el.style.color = ''; }
   }
   updateTrash();
