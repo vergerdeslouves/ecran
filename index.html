@@ -114,7 +114,7 @@
     .ag-legend { float: right; font-family: 'Readex Pro', -apple-system, Helvetica, Arial, sans-serif; font-size: 11px; font-weight: normal; letter-spacing: 0; padding-top: 3px; }
     .ag-legend span { margin-left: 8px; color: #dfddd2; }
     .ag-dot { display: inline-block; width: 8px; height: 8px; border-radius: 4px; margin-right: 4px; }
-    #agenda-list { height: 452px; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+    #agenda-list { height: 452px; overflow-y: auto; }
     #agenda-list::-webkit-scrollbar { display: none; }
     .ag-day { font-family: 'Fraunces', Georgia, serif; font-size: 15px; color: #b9b58d; margin: 12px 0 6px; }
     .ag-day:first-child { margin-top: 0; }
@@ -152,7 +152,7 @@
       border-radius: 8px; border: none; background-color: #aed100; color: #091b18;
       -webkit-appearance: none;
     }
-    #todo-list { list-style: none; height: 300px; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+    #todo-list { list-style: none; height: 300px; overflow-y: auto; }
     .todo-item { padding: 10px 8px; border-bottom: 1px solid #1d4a3e; font-size: 16px; overflow: hidden; }
     .todo-text { float: left; width: 82%; }
     .todo-item.done .todo-text { text-decoration: line-through; color: #b9b58d; }
@@ -589,7 +589,11 @@
     var h = Math.floor(sec / 3600), m = Math.floor((sec % 3600) / 60), x = sec % 60;
     return (h ? h + ':' + pad(m) : pad(m)) + ':' + pad(x);
   }
-  function tmRender() {
+  var tmLast = '';
+  function tmRender() {   // ne redessine que si l'affichage change (évite des bugs d'affichage sur iOS 12)
+    var k = tmFmt(tmRemaining()) + (tmEnd ? '+' : '-');
+    if (k === tmLast) return;
+    tmLast = k;
     $('tm-display').innerHTML = tmFmt(tmRemaining());
     $('tm-display').className = tmEnd ? 'run' : '';
     $('tm-go').innerHTML = tmEnd ? '❚❚' : '▶';
