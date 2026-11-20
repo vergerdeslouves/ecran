@@ -830,7 +830,25 @@
     setInterval(function () { srv({ action: 'liste' }); }, 30 * 1000);
     loadAgenda();
   };
+
+  /* --- MISE À JOUR AUTOMATIQUE : recharge la page quand une nouvelle version est publiée --- */
+  var VERSION = '2026-11-20b';
+  function checkUpdate() {
+    var x = new XMLHttpRequest();
+    x.open('GET', location.pathname + '?check=' + new Date().getTime(), true);
+    x.onload = function () {
+      if (x.status !== 200) return;
+      var m = /var VERSION = '([^']+)'/.exec(x.responseText);
+      if (!m || m[1] === VERSION) return;
+      var a = document.activeElement;
+      if (a && (a.tagName === 'INPUT' || a.tagName === 'TEXTAREA')) return;   // on attend la fin de la saisie
+      location.replace(location.pathname + '?v=' + m[1]);
+    };
+    x.send();
+  }
+  setTimeout(checkUpdate, 20 * 1000);
+  setInterval(checkUpdate, 5 * 60 * 1000);
 </script>
-<script src="assistant.js"></script>
+<script src="assistant.js?v=2026-11-20b"></script>
 </body>
 </html>
