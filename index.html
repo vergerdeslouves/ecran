@@ -35,18 +35,18 @@
     }
 
     /* HORLOGE */
-    .clock-card { text-align: center; padding: 14px 10px 18px; }
-    .brand { overflow: hidden; margin-bottom: 10px; }
+    .clock-card { text-align: center; padding: 12px 10px 12px; }
+    .brand { overflow: hidden; margin-bottom: 6px; }
     .brand img { width: 88%; height: auto; -webkit-filter: brightness(0) invert(0.94); filter: brightness(0) invert(0.94); }
     #clock-time { font-size: 56px; font-weight: 700; letter-spacing: 2px; color: #f0eee5; line-height: 1; }
     #clock-sec { font-size: 24px; color: #aed100; vertical-align: top; margin-left: 4px; }
     #clock-date { font-size: 17px; color: #dfddd2; margin-top: 8px; }
     #clock-date:first-letter { text-transform: uppercase; }
-    #clock-eph { font-size: 14px; color: #dfddd2; margin-top: 8px; line-height: 1.5; }
+    #clock-eph { font-size: 13px; color: #dfddd2; margin-top: 6px; line-height: 1.4; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .eph-sun { color: #b9b58d; font-size: 13px; }
 
     /* METEO */
-    .weather-now { overflow: hidden; margin-bottom: 12px; padding-bottom: 10px; border-bottom: 1px solid #1d4a3e; }
+    .weather-now { overflow: hidden; margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px solid #1d4a3e; }
     .weather-temp { float: left; font-size: 44px; font-weight: bold; color: #aed100; }
     .weather-desc { float: right; text-align: right; padding-top: 6px; }
     .weather-city { font-size: 16px; font-weight: bold; }
@@ -60,7 +60,7 @@
     /* SMART LIFE */
     .smart-grid { overflow: hidden; }
     .smart-btn {
-      float: left; width: 48%; margin-bottom: 8px; padding: 22px 8px;
+      float: left; width: 48%; margin-bottom: 8px; padding: 14px 8px;
       background-color: #091b18; border: 1px solid #1d4a3e; border-radius: 10px;
       color: #f0eee5; font-size: 15px; font-weight: bold; text-align: center; cursor: pointer;
     }
@@ -408,10 +408,9 @@
     if (nom.charAt(0) === '*') { evt = evt ? evt + ' · ' + nom.substr(1) : nom.substr(1); nom = ''; }
     if (evt && nom) txt = '🎉 ' + evt + ' · fête des ' + nom;
     else if (evt) txt = '🎉 ' + evt;
-    else txt = '🌸 Bonne fête aux ' + nom;
+    else txt = '🌸 Fête : ' + nom;
     var s = soleil(now);
-    $('clock-eph').innerHTML = txt + '<br><span class="eph-sun">☀️ ' + hmMin(s[0]) + '  →  🌙 ' + hmMin(s[1])
-      + ' · ' + hmMin(s[1] - s[0]) + ' de jour</span>';
+    $('clock-eph').innerHTML = txt + ' <span class="eph-sun">· ☀️ ' + hmMin(s[0]) + ' → ' + hmMin(s[1]) + '</span>';
   }
 
   function updateClock() {
@@ -907,7 +906,7 @@
   };
 
   /* --- MISE À JOUR AUTOMATIQUE : recharge la page quand une nouvelle version est publiée --- */
-  var VERSION = '2026-11-20c';
+  var VERSION = '2026-11-20d';
   function checkUpdate() {
     var x = new XMLHttpRequest();
     x.open('GET', location.pathname + '?check=' + new Date().getTime(), true);
@@ -924,6 +923,6 @@
   setTimeout(checkUpdate, 20 * 1000);
   setInterval(checkUpdate, 5 * 60 * 1000);
 </script>
-<script src="assistant.js?v=2026-11-20c"></script>
+<script src="assistant.js?v=2026-11-20d"></script>
 </body>
 </html>
