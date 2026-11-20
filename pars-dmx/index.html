@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0b0d12">
+<title>Pars DMX</title>
+<style>
+:root{--bg:#0b0d12;--card:#151924;--card2:#1d2230;--txt:#eef1f7;--mut:#8b93a7;--acc:#7c5cff;--ok:#2fd27a;--bad:#ff4d5e;--r:14px}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--txt);font:15px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+body{padding:env(safe-area-inset-top) env(safe-area-inset-right) calc(env(safe-area-inset-bottom) + 12px) env(safe-area-inset-left)}
+.wrap{max-width:560px;margin:0 auto;padding:12px}
+header{display:flex;align-items:center;gap:8px;margin-bottom:12px}
+header h1{font-size:19px;margin:0;flex:1;letter-spacing:.2px}
+button{font:inherit;color:inherit;background:var(--card2);border:1px solid #2a3142;border-radius:12px;padding:10px 14px;cursor:pointer}
+button:active{transform:scale(.97)}
+button.pri{background:var(--acc);border-color:var(--acc);color:#fff;font-weight:600}
+button.danger{background:var(--bad);border-color:var(--bad);color:#fff;font-weight:700}
+button.on{outline:2px solid var(--acc);background:#2a2350}
+.pill{display:flex;align-items:center;gap:6px;font-size:13px;padding:8px 12px;border-radius:999px}
+.dot{width:9px;height:9px;border-radius:50%;background:var(--mut)}
+.dot.ok{background:var(--ok);box-shadow:0 0 8px var(--ok)}.dot.sim{background:#f5b041}
+.pars{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.par{background:var(--card);border:2px solid transparent;border-radius:var(--r);padding:10px 6px 8px;text-align:center;cursor:pointer;user-select:none}
+.par.sel{border-color:var(--acc)}
+.lens{width:52px;height:52px;margin:0 auto 6px;border-radius:50%;background:#000;border:3px solid #2a3142;transition:background .05s}
+.par b{display:block;font-size:13px}.par small{color:var(--mut);font-size:11px}
+.row{display:flex;gap:8px;align-items:center;margin:10px 0}
+.row.wrapr{flex-wrap:wrap}
+.grow{flex:1}
+nav{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:14px 0 10px;background:var(--card);padding:5px;border-radius:var(--r)}
+nav button{border:0;background:transparent;padding:9px 4px;font-size:14px;color:var(--mut)}
+nav button.act{background:var(--card2);color:var(--txt);font-weight:600}
+.pane{display:none}.pane.act{display:block}
+.card{background:var(--card);border-radius:var(--r);padding:12px;margin-bottom:10px}
+.card h3{margin:0 0 8px;font-size:14px;color:var(--mut);font-weight:600;text-transform:uppercase;letter-spacing:.6px}
+.sw{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+.sw button{height:52px;border-radius:12px;padding:0;font-size:11px;font-weight:600;text-shadow:0 1px 2px #000;border:0}
+.sl{display:grid;grid-template-columns:62px 1fr 38px;align-items:center;gap:8px;margin:7px 0}
+.sl label{font-size:13px;color:var(--mut)}.sl output{font-size:12px;text-align:right;color:var(--mut)}
+input[type=range]{width:100%;height:30px;accent-color:var(--acc)}
+input[type=color]{width:52px;height:40px;border:0;background:none;padding:0}
+input[type=text],input[type=number],select{font:inherit;color:var(--txt);background:var(--card2);border:1px solid #2a3142;border-radius:10px;padding:9px 10px;width:100%}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.big{padding:14px 8px;font-weight:600}
+.scene{position:relative;padding:16px 8px;font-weight:600;min-height:62px}
+.scene .x{position:absolute;top:2px;right:6px;font-size:12px;color:var(--mut)}
+.note{font-size:13px;color:var(--mut);margin:6px 0}
+ol.guide{padding-left:20px;margin:6px 0;font-size:14px}ol.guide li{margin:5px 0}
+code{background:var(--card2);padding:1px 5px;border-radius:6px}
+dialog{background:var(--card);color:var(--txt);border:1px solid #2a3142;border-radius:18px;width:min(92vw,440px);padding:16px}
+dialog::backdrop{background:#000a}
+.err{color:var(--bad);font-size:13px;min-height:18px}
+.addr{display:grid;grid-template-columns:1fr 90px 70px;gap:6px;align-items:center;margin:6px 0}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>🎛️ Pars DMX</h1>
+    <button class="pill" id="connBtn"><span class="dot" id="connDot"></span><span id="connTxt">Connecter</span></button>
+    <button class="danger" id="boBtn">Noir</button>
+  </header>
+
+  <div class="pars" id="pars"></div>
+  <div class="row">
+    <button id="selAll" class="grow">Tout sélectionner</button>
+    <button id="stopFx" class="grow">⏹ Stop effet</button>
+  </div>
+
+  <nav id="tabs">
+    <button data-t="color" class="act">Couleur</button>
+    <button data-t="fx">Effets</button>
+    <button data-t="scenes">Scènes</button>
+    <button data-t="set">Réglages</button>
+  </nav>
+
+  <section class="pane act" id="p-color">
+    <div class="card">
+      <h3>Couleurs rapides</h3>
+      <div class="sw" id="swatches"></div>
+      <div class="row"><span class="note grow">Couleur libre</span><input type="color" id="picker" value="#ff0080"></div>
+    </div>
+    <div class="card">
+      <h3>Réglage fin</h3>
+      <div id="sliders"></div>
+    </div>
+    <div class="card">
+      <h3>Blanc / température</h3>
+      <div class="sl"><label>Temp.</label><input type="range" id="ct" min="0" max="23" value="0"><output id="ctOut">off</output></div>
+      <p class="note">Laisser sur « off » pour utiliser les couleurs ci-dessus.</p>
+    </div>
+  </section>
+
+  <section class="pane" id="p-fx">
+    <div class="card">
+      <h3>Effets de l'appli</h3>
+      <div class="grid2" id="fxList"></div>
+      <div class="sl"><label>Vitesse</label><input type="range" id="fxSpeed" min="1" max="100" value="50"><output id="fxSpeedOut">50</output></div>
+      <p class="note">Chenillard, respiration, vague et flash utilisent la couleur choisie dans l'onglet Couleur.</p>
+    </div>
+    <div class="card">
+      <h3>Programmes intégrés aux pars</h3>
+      <select id="prog"></select>
+      <div class="sl"><label>Vitesse</label><input type="range" id="progSpeed" min="0" max="255" value="128"><output id="progSpeedOut">128</output></div>
+      <p class="note">Les modes « son » utilisent le micro de chaque par.</p>
+    </div>
+  </section>
+
+  <section class="pane" id="p-scenes">
+    <div class="card">
+      <h3>Scènes</h3>
+      <div class="grid2" id="sceneList"></div>
+    </div>
+    <div class="card">
+      <h3>Enregistrer l'ambiance actuelle</h3>
+      <div class="row"><input type="text" id="sceneName" placeholder="Nom de la scène"><button class="pri" id="saveScene">Enregistrer</button></div>
+    </div>
+  </section>
+
+  <section class="pane" id="p-set">
+    <div class="card">
+      <h3>Interface USB-DMX</h3>
+      <select id="drvType">
+        <option value="pro">DMX USB Pro (compatible Enttec)</option>
+        <option value="open">Open DMX USB (FTDI simple)</option>
+      </select>
+      <p class="note">Branchée sur le téléphone avec un adaptateur USB-C OTG, puis reliée en XLR à l'émetteur DMX sans fil.</p>
+    </div>
+    <div class="card">
+      <h3>Pars et adresses (mode 11CH)</h3>
+      <div class="row"><label class="grow">Nombre de pars</label><input type="number" id="nPars" min="1" max="8" style="width:80px"></div>
+      <div id="addrList"></div>
+      <button id="autoAddr" style="width:100%">Adresses auto (1, 12, 23, 34…)</button>
+    </div>
+    <div class="card">
+      <h3>Préparer chaque par</h3>
+      <ol class="guide">
+        <li><b>Channel</b> → <code>11CH</code></li>
+        <li><b>Address</b> → l'adresse indiquée ci-dessus (001, 012, 023, 034)</li>
+        <li><b>Wireless DMX</b> → <code>ON</code>, même <b>Group ID</b> (couleur 1 à 7) que l'émetteur</li>
+        <li><b>DMX Fail</b> → <code>Hold</code> (garde la lumière si le téléphone se met en veille)</li>
+        <li>Revenir à l'écran <b>Address</b> : le par écoute alors le DMX.</li>
+      </ol>
+      <p class="note">Bouton « Identifier » : fait clignoter un par en blanc pour vérifier son adresse.</p>
+    </div>
+  </section>
+</div>
+
+<dialog id="connDlg">
+  <h3 style="margin-top:0">Connexion</h3>
+  <p class="note" id="connInfo"></p>
+  <div class="err" id="connErr"></div>
+  <div class="grid2" style="margin-top:10px">
+    <button class="pri" id="doUsb">🔌 Interface USB</button>
+    <button id="doSim">🧪 Simulation</button>
+  </div>
+  <div class="row"><button id="doDisc" class="grow">Déconnecter</button><button id="closeDlg" class="grow">Fermer</button></div>
+</dialog>
+
+<script>
+"use strict";
+const CHN = ['dim','r','g','b','w','a','uv','strobe','ct','prog','speed'];
+const BLANK = {r:0,g:0,b:0,w:0,a:0,uv:0};
+const CTS = [0,2000,2200,2400,2600,2800,3200,3600,4000,4400,4800,5200,5600,6000,6400,6800,7200,7600,8000,8400,8800,9200,9600,10000];
+const SWATCHES = [
+  ['Rouge',{r:255}],['Orange',{r:255,g:40,a:200}],['Ambre',{a:255}],['Jaune',{r:255,g:170,a:90}],['Vert',{g:255}],
+  ['Cyan',{g:255,b:255}],['Bleu',{b:255}],['Violet',{r:110,b:255,uv:140}],['Rose',{r:255,g:40,b:110,w:40}],['Magenta',{r:255,b:255}],
+  ['Chaud',{r:70,w:255,a:150}],['Froid',{w:255,b:70}],['Blanc',{r:255,g:255,b:255,w:255}],['UV',{uv:255}],['Off',{}]
+];
+const PROGS = [[0,'Aucun (contrôle appli)'],[75,'Saut de couleurs'],[125,'Dégradé'],[175,'Mutation'],[208,'Son – changement de couleur'],[223,'Son – strobe couleur'],[238,'Son – mutation'],[250,'Son – respiration']];
+const LIGHT_SLIDERS = [['dim','Intensité','#fff'],['r','Rouge','#ff3b3b'],['g','Vert','#2fd27a'],['b','Bleu','#3b7bff'],['w','Blanc','#ddd'],['a','Ambre','#ffb000'],['uv','UV','#a35bff'],['strobe','Strobe','#888']];
+
+const mkPar = (i,addr)=>({name:'Par '+(i+1),addr,dim:255,r:0,g:0,b:0,w:0,a:0,uv:0,strobe:0,ct:0,prog:0,speed:128});
+let S = {pars:[0,1,2,3].map(i=>mkPar(i,1+i*11)),sel:[0,1,2,3],fx:null,fxSpeed:50,drvType:'pro',scenes:[]};
+try{const s=JSON.parse(localStorage.getItem('parsdmx.v1')||'null'); if(s&&s.pars) S=Object.assign(S,s,{fx:null});}catch(e){}
+let saveT; const save=()=>{clearTimeout(saveT);saveT=setTimeout(()=>{try{localStorage.setItem('parsdmx.v1',JSON.stringify(S))}catch(e){}},300)};
+let blackout=false, ident=null, t0=performance.now();
+
+/* ---------- helpers ---------- */
+const $=id=>document.getElementById(id);
+const clamp=v=>Math.max(0,Math.min(255,Math.round(v)));
+function hsv(h,s,v){const i=Math.floor(h*6),f=h*6-i,p=v*(1-s),q=v*(1-f*s),t=v*(1-(1-f)*s);const m=[[v,t,p],[q,v,p],[p,v,t],[p,q,v],[t,p,v],[v,p,q]][((i%6)+6)%6];return {r:clamp(m[0]*255),g:clamp(m[1]*255),b:clamp(m[2]*255)};}
+function look(p){ // approximate visible colour for preview
+  if(p.ct>0){const k=CTS[p.ct];const w=Math.min(1,(k-2000)/8000);return [255,clamp(170+70*w),clamp(90+165*w)].map(c=>clamp(c*p.dim/255));}
+  const R=p.r+p.w+p.a+p.uv*.35, G=p.g+p.w*.95+p.a*.62, B=p.b+p.w*.85+p.uv*.8, k=p.dim/255;
+  return [clamp(R*k),clamp(G*k),clamp(B*k)];
+}
+const css=c=>`rgb(${c[0]},${c[1]},${c[2]})`;
+const sel=()=>S.sel.filter(i=>i<S.pars.length);
+
+/* ---------- effects ---------- */
+const frac=x=>x-Math.floor(x);
+const FX = {
+  rainbow:{n:'🌈 Arc-en-ciel',over:1,f:(p,i,n,t,s)=>({...p,...BLANK,...hsv(frac(t*s*.1+i/n),1,1),ct:0})},
+  chase:{n:'➡️ Chenillard',f:(p,i,n,t,s)=>Math.floor(t*s*2)%n===i?p:{...p,dim:0}},
+  breath:{n:'💨 Respiration',f:(p,i,n,t,s)=>({...p,dim:clamp(p.dim*(.06+.94*(.5-.5*Math.cos(6.283*t*s*.3))))})},
+  wave:{n:'🌊 Vague',f:(p,i,n,t,s)=>({...p,dim:clamp(p.dim*(.06+.94*(.5-.5*Math.cos(6.283*(t*s*.4-i/n)))))})},
+  police:{n:'🚨 Gyrophare',over:1,f:(p,i,n,t,s)=>{const red=((i%2)===(Math.floor(t*s*3)%2));return {...p,...BLANK,ct:0,r:red?255:0,b:red?0:255}}},
+  fire:{n:'🔥 Feu de camp',over:1,f:(p,i,n,t,s)=>{const z=(Math.sin(t*s*7.1+i*3)+Math.sin(t*s*13.3+i*1.7)+Math.sin(t*s*3.7+i*5))/3;return {...p,...BLANK,ct:0,r:255,g:clamp(55+35*z),a:clamp(170+60*z),dim:clamp(p.dim*(.62+.38*z))}}},
+  random:{n:'🎲 Aléatoire',over:1,f:(p,i,n,t,s)=>{const k=Math.floor(t*s*1.5);return {...p,...BLANK,ct:0,...hsv(frac(Math.sin((k+1)*(i+3)*12.9898)*43758.5453),1,1)}}},
+  flash:{n:'⚡ Flash',f:(p,i,n,t,s)=>(Math.floor(t*s*8)%2)?p:{...p,dim:0}}
+};
+
+/* ---------- frame ---------- */
+function frame(){
+  const t=(performance.now()-t0)/1000, n=S.pars.length;
+  return S.pars.map((p,i)=>{
+    let o={...p};
+    if(S.fx&&FX[S.fx.id]&&S.fx.targets.includes(i)){const tg=S.fx.targets;o=FX[S.fx.id].f(o,tg.indexOf(i),tg.length,t,S.fxSpeed/50);}
+    if(ident&&ident.i===i){o=(Math.floor(t*6)%2)?{...o,...BLANK,dim:255,w:255,ct:0,prog:0,strobe:0}:{...o,dim:0,prog:0};if(performance.now()>ident.until)ident=null;}
+    if(blackout)o={...o,dim:0,prog:0};
+    return o;
+  });
+}
+function universe(out){
+  const u=new Uint8Array(513);
+  out.forEach(p=>{const a=p.addr;if(a<1||a+10>512)return;
+    const st=p.strobe>0?clamp(10+p.strobe*245/100):0, ct=p.ct>0?11+(p.ct-1)*10+4:0;
+    [p.dim,p.r,p.g,p.b,p.w,p.a,p.uv,st,ct,p.prog,p.speed].forEach((v,k)=>u[a+k]=clamp(v));});
+  return u;
+}
+
+/* ---------- USB DMX (WebUSB, FTDI) ---------- */
+let drv=null, sim=false, busy=false;
+class FtdiDmx{
+  constructor(dev,type){this.dev=dev;this.type=type;}
+  ctl(req,val,idx=0){return this.dev.controlTransferOut({requestType:'vendor',recipient:'device',request:req,value:val,index:idx});}
+  async open(){
+    const d=this.dev; await d.open();
+    if(d.configuration===null) await d.selectConfiguration(1);
+    await d.claimInterface(0);
+    const ep=d.configuration.interfaces[0].alternate.endpoints.find(e=>e.direction==='out');
+    this.ep=ep?ep.endpointNumber:2;
+    await this.ctl(0,0); await this.ctl(0,1); await this.ctl(0,2); // reset + purge
+    await this.ctl(9,2);  // latency 2 ms
+    await this.ctl(2,0);  // no flow control
+    if(this.type==='open'){await this.ctl(3,12); await this.ctl(4,0x1008); await this.ctl(1,0x0200);} // 250 kbaud 8N2, RTS low
+    else {await this.ctl(3,49204); await this.ctl(4,0x0008);} // ~57600 8N1
+  }
+  async send(u){
+    if(this.type==='open'){await this.ctl(4,0x5008); await this.ctl(4,0x1008); await this.dev.transferOut(this.ep,u);}
+    else{const n=u.length,p=new Uint8Array(n+5);p[0]=0x7E;p[1]=6;p[2]=n&255;p[3]=n>>8;p.set(u,4);p[n+4]=0xE7;await this.dev.transferOut(this.ep,p);}
+  }
+  async close(){try{await this.dev.close()}catch(e){}}
+}
+async function connectUsb(dev){
+  const d=new FtdiDmx(dev,S.drvType); await d.open(); drv=d; sim=false; setConn();
+}
+async function pickUsb(){
+  $('connErr').textContent='';
+  if(!navigator.usb){$('connErr').textContent="USB indisponible ici. Ouvre l'appli dans Chrome (Android) depuis son adresse https, pas dans un aperçu.";return;}
+  try{const dev=await navigator.usb.requestDevice({filters:[{vendorId:0x0403}]});await connectUsb(dev);$('connDlg').close();}
+  catch(e){$('connErr').textContent=e.name==='NotFoundError'?'Aucune interface choisie.':(e.name==='SecurityError'?"USB bloqué dans cette fenêtre : ouvre l'appli directement dans Chrome.":'Erreur : '+e.message);}
+}
+async function disconnect(){if(drv)await drv.close();drv=null;sim=false;setConn();}
+function setConn(){
+  const dot=$('connDot'),tx=$('connTxt');dot.className='dot';
+  if(drv){dot.classList.add('ok');tx.textContent=S.drvType==='pro'?'USB Pro':'Open DMX';}
+  else if(sim){dot.classList.add('sim');tx.textContent='Simulation';}
+  else tx.textContent='Connecter';
+}
+if(navigator.usb){
+  navigator.usb.addEventListener('disconnect',e=>{if(drv&&e.device===drv.dev){drv=null;setConn();}});
+  navigator.usb.getDevices().then(ds=>{const d=ds.find(x=>x.vendorId===0x0403);if(d)connectUsb(d).catch(()=>{});}).catch(()=>{});
+}
+
+/* ---------- UI ---------- */
+function renderPars(){
+  $('pars').style.gridTemplateColumns=`repeat(${Math.min(4,S.pars.length)},1fr)`;
+  $('pars').innerHTML=S.pars.map((p,i)=>`<div class="par ${sel().includes(i)?'sel':''}" data-i="${i}"><div class="lens" id="lens${i}"></div><b>${esc(p.name)}</b><small>@${String(p.addr).padStart(3,'0')}</small></div>`).join('');
+}
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+$('pars').addEventListener('click',e=>{const el=e.target.closest('.par');if(!el)return;const i=+el.dataset.i;
+  S.sel=sel().includes(i)?S.sel.filter(x=>x!==i):[...sel(),i].sort();renderPars();syncSliders();save();});
+$('selAll').onclick=()=>{S.sel=S.pars.map((_,i)=>i);renderPars();syncSliders();save();};
+
+function apply(patch,stopOver=true){
+  const s=sel();if(!s.length){toast('Sélectionne au moins un par');return;}
+  s.forEach(i=>Object.assign(S.pars[i],patch));
+  if(stopOver&&S.fx&&FX[S.fx.id].over){S.fx.targets=S.fx.targets.filter(i=>!s.includes(i));if(!S.fx.targets.length)S.fx=null;renderFx();}
+  syncSliders();save();
+}
+$('swatches').innerHTML=SWATCHES.map(([n,c],k)=>{const p={dim:255,...BLANK,...c},L=look(p),lum=L[0]*.3+L[1]*.59+L[2]*.11;return `<button data-k="${k}" style="background:${css(L)};color:${lum>170?'#111;text-shadow:none':'#fff'}">${n}</button>`}).join('');
+$('swatches').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;const c=SWATCHES[+b.dataset.k][1];
+  apply(Object.keys(c).length?{...BLANK,...c,ct:0,prog:0,dim:Math.max(S.pars[sel()[0]]?.dim||255,40)}:{...BLANK,ct:0,prog:0});});
+$('picker').addEventListener('input',e=>{const h=e.target.value;apply({...BLANK,ct:0,prog:0,r:parseInt(h.slice(1,3),16),g:parseInt(h.slice(3,5),16),b:parseInt(h.slice(5,7),16)});});
+
+$('sliders').innerHTML=LIGHT_SLIDERS.map(([k,l,c])=>`<div class="sl"><label>${l}</label><input type="range" data-k="${k}" min="0" max="${k==='strobe'?100:255}" style="accent-color:${c}"><output id="o-${k}"></output></div>`).join('');
+$('sliders').addEventListener('input',e=>{const k=e.target.dataset.k;if(!k)return;const v=+e.target.value;$('o-'+k).textContent=v;
+  apply({[k]:v,...(['r','g','b','w','a','uv'].includes(k)?{ct:0,prog:0}:{})},['r','g','b','w','a','uv'].includes(k));});
+$('ct').addEventListener('input',e=>{const v=+e.target.value;$('ctOut').textContent=v?CTS[v]+'K':'off';apply({ct:v,prog:0});});
+function syncSliders(){
+  const p=S.pars[sel()[0]];if(!p)return;
+  document.querySelectorAll('#sliders input').forEach(inp=>{inp.value=p[inp.dataset.k];$('o-'+inp.dataset.k).textContent=p[inp.dataset.k];});
+  $('ct').value=p.ct;$('ctOut').textContent=p.ct?CTS[p.ct]+'K':'off';
+  $('prog').value=p.prog;$('progSpeed').value=p.speed;$('progSpeedOut').textContent=p.speed;
+}
+
+/* effects tab */
+function renderFx(){$('fxList').innerHTML=Object.entries(FX).map(([id,f])=>`<button class="big ${S.fx&&S.fx.id===id?'on':''}" data-id="${id}">${f.n}</button>`).join('');}
+$('fxList').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;const id=b.dataset.id;
+  if(S.fx&&S.fx.id===id){S.fx=null;}else{const s=sel();if(!s.length){toast('Sélectionne au moins un par');return;}S.fx={id,targets:[...s]};s.forEach(i=>S.pars[i].prog=0);}
+  renderFx();save();});
+$('stopFx').onclick=()=>{S.fx=null;S.pars.forEach(p=>p.prog=0);renderFx();syncSliders();save();};
+$('fxSpeed').value=S.fxSpeed;$('fxSpeedOut').textContent=S.fxSpeed;
+$('fxSpeed').addEventListener('input',e=>{S.fxSpeed=+e.target.value;$('fxSpeedOut').textContent=S.fxSpeed;save();});
+$('prog').innerHTML=PROGS.map(([v,n])=>`<option value="${v}">${n}</option>`).join('');
+$('prog').addEventListener('change',e=>{const v=+e.target.value;if(v&&S.fx){S.fx.targets=S.fx.targets.filter(i=>!sel().includes(i));if(!S.fx.targets.length)S.fx=null;renderFx();}apply({prog:v},false);});
+$('progSpeed').addEventListener('input',e=>{$('progSpeedOut').textContent=e.target.value;apply({speed:+e.target.value},false);});
+
+/* scenes */
+const COLS=k=>({...BLANK,...SWATCHES.find(s=>s[0]===k)[1]});
+const BUILTIN=[
+  {name:'🕯️ Blanc chaud',pars:[{dim:255,...COLS('Chaud')}]},
+  {name:'🌅 Coucher de soleil',pars:[{dim:255,...COLS('Rouge')},{dim:255,...COLS('Orange')},{dim:255,...COLS('Ambre')},{dim:255,...COLS('Rose')}]},
+  {name:'🌃 Bleu nuit',pars:[{dim:170,...BLANK,b:255,uv:90}]},
+  {name:'🎉 Soirée',pars:[{dim:255,...COLS('Magenta')},{dim:255,...COLS('Cyan')}]},
+  {name:'🌈 Arc-en-ciel',pars:[{dim:255,...BLANK}],fx:'rainbow',speed:40},
+  {name:'🔥 Feu de camp',pars:[{dim:255,...BLANK}],fx:'fire',speed:45},
+  {name:'💃 Dancefloor',pars:[{dim:255,...BLANK}],fx:'random',speed:70},
+  {name:'🎵 Son (micro des pars)',pars:[{dim:255,...BLANK,prog:208,speed:128}]}
+];
+function renderScenes(){
+  $('sceneList').innerHTML=BUILTIN.map((s,k)=>`<button class="scene" data-b="${k}">${s.name}</button>`).join('')+
+   S.scenes.map((s,k)=>`<button class="scene" data-u="${k}">⭐ ${esc(s.name)}<span class="x" data-del="${k}">✕</span></button>`).join('');
+}
+function loadScene(sc){
+  const n=S.pars.length;
+  S.pars.forEach((p,i)=>{const src=sc.pars[i%sc.pars.length];Object.assign(p,{strobe:0,ct:0,prog:0,speed:128},src);});
+  S.fx=sc.fx?{id:sc.fx,targets:S.pars.map((_,i)=>i)}:null; if(sc.speed){S.fxSpeed=sc.speed;$('fxSpeed').value=sc.speed;$('fxSpeedOut').textContent=sc.speed;}
+  blackout=false;$('boBtn').classList.remove('on');renderFx();syncSliders();save();
+}
+$('sceneList').addEventListener('click',e=>{
+  const del=e.target.closest('[data-del]');if(del){const k=+del.dataset.del;if(del.dataset.armed){S.scenes.splice(k,1);renderScenes();save();}else{del.dataset.armed=1;del.textContent='Suppr ?';setTimeout(()=>{if(del.isConnected){del.textContent='✕';delete del.dataset.armed}},2500);}e.stopPropagation();return;}
+  const b=e.target.closest('button');if(!b)return;
+  loadScene(b.dataset.b!==undefined?BUILTIN[+b.dataset.b]:S.scenes[+b.dataset.u]);
+});
+$('saveScene').onclick=()=>{const name=$('sceneName').value.trim()||('Scène '+(S.scenes.length+1));
+  S.scenes.push({name,pars:S.pars.map(p=>{const o={};CHN.forEach(k=>o[k]=p[k]);return o;}),fx:S.fx?S.fx.id:null,speed:S.fxSpeed});
+  $('sceneName').value='';renderScenes();save();toast('Scène enregistrée');};
+
+/* settings */
+$('drvType').value=S.drvType;$('drvType').onchange=e=>{S.drvType=e.target.value;save();if(drv)toast('Reconnecte l\'interface pour appliquer');};
+$('nPars').value=S.pars.length;
+$('nPars').onchange=e=>{const n=Math.max(1,Math.min(8,+e.target.value||4));while(S.pars.length<n){const i=S.pars.length;S.pars.push(mkPar(i,1+i*11));}S.pars.length=n;S.sel=sel();if(S.fx){S.fx.targets=S.fx.targets.filter(i=>i<n);}$('nPars').value=n;renderAll();save();};
+function renderAddr(){$('addrList').innerHTML=S.pars.map((p,i)=>`<div class="addr"><input type="text" data-n="${i}" value="${esc(p.name)}"><input type="number" min="1" max="502" data-a="${i}" value="${p.addr}"><button data-id="${i}">Identifier</button></div>`).join('');}
+$('addrList').addEventListener('change',e=>{const t=e.target;if(t.dataset.n!==undefined)S.pars[+t.dataset.n].name=t.value||('Par '+(+t.dataset.n+1));if(t.dataset.a!==undefined)S.pars[+t.dataset.a].addr=Math.max(1,Math.min(502,+t.value||1));renderPars();save();});
+$('addrList').addEventListener('click',e=>{const b=e.target.closest('[data-id]');if(b)ident={i:+b.dataset.id,until:performance.now()+3000};});
+$('autoAddr').onclick=()=>{S.pars.forEach((p,i)=>p.addr=1+i*11);renderAddr();renderPars();save();};
+
+/* connection dialog */
+$('connBtn').onclick=()=>{$('connInfo').textContent=navigator.usb?"Branche l'interface USB-DMX au téléphone (adaptateur OTG), puis choisis-la dans la liste.":"Ce navigateur ne gère pas l'USB : utilise Chrome sur Android. La simulation permet de tester l'appli.";$('connErr').textContent='';$('connDlg').showModal();};
+$('doUsb').onclick=pickUsb;
+$('doSim').onclick=async()=>{await disconnect();sim=true;setConn();$('connDlg').close();};
+$('doDisc').onclick=async()=>{await disconnect();$('connDlg').close();};
+$('closeDlg').onclick=()=>$('connDlg').close();
+$('boBtn').onclick=()=>{blackout=!blackout;$('boBtn').classList.toggle('on',blackout);$('boBtn').textContent=blackout?'Rallumer':'Noir';};
+
+/* tabs */
+$('tabs').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;
+  document.querySelectorAll('#tabs button').forEach(x=>x.classList.toggle('act',x===b));
+  document.querySelectorAll('.pane').forEach(p=>p.classList.toggle('act',p.id==='p-'+b.dataset.t));});
+
+let toastEl;function toast(m){if(!toastEl){toastEl=document.createElement('div');toastEl.style.cssText='position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#000d;padding:10px 16px;border-radius:12px;font-size:14px;z-index:9;transition:opacity .3s';document.body.appendChild(toastEl);}toastEl.textContent=m;toastEl.style.opacity=1;clearTimeout(toastEl._t);toastEl._t=setTimeout(()=>toastEl.style.opacity=0,1800);}
+
+/* keep screen on */
+let wl=null;async function wake(){try{if('wakeLock' in navigator&&!wl){wl=await navigator.wakeLock.request('screen');wl.addEventListener('release',()=>wl=null);}}catch(e){}}
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')wake();});
+document.addEventListener('click',wake,{once:true});
+
+function renderAll(){renderPars();renderAddr();renderFx();renderScenes();syncSliders();}
+renderAll();setConn();
+
+/* main loop ~25 fps */
+setInterval(async()=>{
+  const out=frame();
+  out.forEach((p,i)=>{const el=$('lens'+i);if(!el)return;let c=look(p);
+    if(p.strobe>0&&Math.floor(performance.now()/(400-p.strobe*3.6))%2)c=[0,0,0];
+    el.style.background=css(c);el.style.boxShadow=(c[0]+c[1]+c[2]>30)?`0 0 18px ${css(c)}`:'none';});
+  if(drv&&!busy){busy=true;try{await drv.send(universe(out));}catch(e){drv=null;setConn();toast('Interface déconnectée');}busy=false;}
+},40);
+</script>
+</body>
+</html>
