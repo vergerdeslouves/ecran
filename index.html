@@ -173,6 +173,24 @@
       font-family: inherit; -webkit-appearance: none;
     }
 
+    /* NOTIFICATIONS DU KOTA */
+    #kota-pop {
+      display: none; position: fixed; top: 20px; left: 50%; width: 600px; margin-left: -300px; z-index: 250;
+      background-color: #091b18; border: 3px solid #aed100; border-radius: 16px; padding: 6px 20px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
+    }
+    .kp-item { padding: 12px 0; border-bottom: 1px solid #1d4a3e; }
+    .kp-item:last-child { border-bottom: none; }
+    .kp-head { font-size: 13px; color: #b9b58d; letter-spacing: 1px; text-transform: uppercase; }
+    .kp-title { font-size: 24px; font-weight: bold; color: #aed100; margin-top: 2px; }
+    .kp-msg { font-size: 17px; color: #f0eee5; margin: 6px 0 12px; line-height: 1.35; }
+    .kp-item button {
+      height: 46px; padding: 0 22px; margin-right: 10px; border-radius: 10px; font-size: 17px; font-weight: bold;
+      font-family: inherit; -webkit-appearance: none; cursor: pointer;
+    }
+    .kp-ack { background-color: #aed100; color: #091b18; border: none; }
+    .kp-ok { background-color: #12352e; color: #f0eee5; border: 1px solid #1d4a3e; }
+
     /* MODE NUIT : voile sombre, un appui le retire 1 minute */
     #night-veil {
       display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
@@ -284,6 +302,7 @@
 </div>
 
 <div id="night-veil" onclick="wakeUp()"></div>
+<div id="kota-pop"></div>
 <div id="tm-alarm" onclick="tmStopAlarm()">⏰ Minuteur terminé !<small>Touche l'écran pour arrêter</small></div>
 
 <script>
@@ -645,6 +664,77 @@
   setInterval(loadAgenda, 10 * 60 * 1000);   // nouvelles données toutes les 10 min
   setInterval(renderAgenda, 60 * 1000);      // grise les rendez-vous passés
 
+  /* --- NOTIFICATIONS DU KOTA (mêmes messages que l'appli ntfy, seulement sur l'écran mural) --- */
+  var KOTA = { serveur: 'https://ntfy.sh', canal: 'verger-louves-kota-7Hq2' };
+  var kotaDepuis = Math.floor(new Date().getTime() / 1000) - 120;   // au démarrage : les 2 dernières minutes
+  var kotaVus = {}, kotaListe = [];
+  function kotaPoll() {
+    if (window.innerWidth <= 700) return;   // les téléphones ont déjà l'appli ntfy
+    var x = new XMLHttpRequest();
+    x.open('GET', KOTA.serveur + '/' + KOTA.canal + ',' + KOTA.canal + '-retour/json?poll=1&since=' + kotaDepuis, true);
+    x.timeout = 15000;
+    x.onload = function () {
+      if (x.status !== 200) return;
+      var lignes = x.responseText.split('\n'), nouveau = false, change = false;
+      for (var i = 0; i < lignes.length; i++) {
+        var m;
+        try { m = JSON.parse(lignes[i]); } catch (e) { continue; }
+        if (!m || m.event !== 'message' || kotaVus[m.id]) continue;
+        kotaVus[m.id] = 1;
+        if (m.time > kotaDepuis) kotaDepuis = m.time;
+        if (m.topic === KOTA.canal + '-retour') {   // quelqu'un a répondu depuis son téléphone
+          var id = String(m.message || '').replace(/^\s+|\s+$/g, '');
+          for (var j = kotaListe.length - 1; j >= 0; j--) if (kotaListe[j].ack === id) { kotaListe.splice(j, 1); change = true; }
+          continue;
+        }
+        var ack = '', label = '';
+        if (m.actions) for (var k = 0; k < m.actions.length; k++) {
+          if (m.actions[k].action === 'http' && m.actions[k].body) { ack = m.actions[k].body; label = m.actions[k].label || 'On arrive'; }
+        }
+        kotaListe.push({ titre: m.title || 'Kota', msg: m.message || '', ack: ack, label: label, t: m.time });
+        nouveau = true;
+      }
+      if (kotaListe.length > 4) kotaListe.splice(0, kotaListe.length - 4);
+      if (nouveau) kotaAlerte(kotaListe[kotaListe.length - 1]);
+      if (nouveau || change) kotaRender();
+    };
+    x.send();
+  }
+  function kotaAlerte(n) {
+    wakeUp();
+    tmBeep();
+    if (window.Assistant) Assistant.speak('Kota : ' + n.titre.replace(/^.*?[–-]\s*/, ''));
+  }
+  function kotaRender() {
+    var maintenant = new Date().getTime() / 1000;
+    for (var j = kotaListe.length - 1; j >= 0; j--) if (maintenant - kotaListe[j].t > 30 * 60) kotaListe.splice(j, 1);   // 30 min max
+    var h = '';
+    for (var i = 0; i < kotaListe.length; i++) {
+      var n = kotaListe[i], d = new Date(n.t * 1000);
+      h += '<div class="kp-item"><div class="kp-head">🔔 Kota · ' + d.getHours() + 'h' + pad(d.getMinutes()) + '</div>'
+        + '<div class="kp-title">' + esc(n.titre) + '</div>'
+        + '<div class="kp-msg">' + esc(n.msg).replace(/\n+/g, '<br>') + '</div>'
+        + (n.ack ? '<button class="kp-ack" onclick="kotaRepondre(' + i + ')">' + esc(n.label) + '</button>' : '')
+        + '<button class="kp-ok" onclick="kotaFermer(' + i + ')">' + (n.ack ? 'Fermer' : 'OK') + '</button></div>';
+    }
+    $('kota-pop').innerHTML = h;
+    $('kota-pop').style.display = h ? 'block' : 'none';
+  }
+  function kotaFermer(i) { kotaListe.splice(i, 1); kotaRender(); }
+  function kotaRepondre(i) {   // même réponse que le bouton « On arrive » de l'appli ntfy : la tablette du kota l'affiche
+    var n = kotaListe[i];
+    if (!n) return;
+    var x = new XMLHttpRequest();
+    x.open('POST', KOTA.serveur + '/' + KOTA.canal + '-retour', true);
+    x.send(n.ack);
+    kotaFermer(i);
+  }
+  setTimeout(kotaPoll, 3000);
+  setInterval(kotaPoll, 20 * 1000);
+  setInterval(kotaRender, 60 * 1000);
+  // Sur iPad, le son ne peut être joué qu'après un premier appui sur l'écran
+  document.addEventListener('touchstart', function () { tmUnlock(); }, false);
+
   /* --- MINUTEUR (local à chaque appareil, survit à un rechargement) --- */
   var tmEnd = parseInt(load('dash_tm_end') || '0', 10) || 0;     // heure de fin si en marche
   var tmLeft = parseInt(load('dash_tm_left') || '0', 10) || 0;   // secondes restantes si en pause
@@ -906,7 +996,7 @@
   };
 
   /* --- MISE À JOUR AUTOMATIQUE : recharge la page quand une nouvelle version est publiée --- */
-  var VERSION = '2026-11-20d';
+  var VERSION = '2026-11-22a';
   function checkUpdate() {
     var x = new XMLHttpRequest();
     x.open('GET', location.pathname + '?check=' + new Date().getTime(), true);
@@ -923,6 +1013,6 @@
   setTimeout(checkUpdate, 20 * 1000);
   setInterval(checkUpdate, 5 * 60 * 1000);
 </script>
-<script src="assistant.js?v=2026-11-20d"></script>
+<script src="assistant.js?v=2026-11-22a"></script>
 </body>
 </html>
