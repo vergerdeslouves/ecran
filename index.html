@@ -667,40 +667,77 @@
   /* --- NOTIFICATIONS DU KOTA (mêmes messages que l'appli ntfy, seulement sur l'écran mural) --- */
   var KOTA = { serveur: 'https://ntfy.sh', canal: 'verger-louves-kota-7Hq2' };
   var kotaDepuis = Math.floor(new Date().getTime() / 1000) - 120;   // au démarrage : les 2 dernières minutes
-  var kotaVus = {}, kotaListe = [];
+  var kotaVus = {}, kotaListe = [], kotaRepondus = {};
+  var kotaUrl = KOTA.serveur + '/' + KOTA.canal + ',' + KOTA.canal + '-retour';
+  // Traite un message reçu (même logique pour la réception instantanée et pour la vérification de secours)
+  function kotaTraiter(m) {
+    if (!m || m.event !== 'message' || kotaVus[m.id]) return 0;
+    kotaVus[m.id] = 1;
+    if (m.time > kotaDepuis) kotaDepuis = m.time;
+    if (m.topic === KOTA.canal + '-retour') {   // quelqu'un a répondu (téléphone ou écran)
+      var id = String(m.message || '').replace(/^\s+|\s+$/g, '');
+      kotaRepondus[id] = 1;
+      var retire = 0;
+      for (var j = kotaListe.length - 1; j >= 0; j--) if (kotaListe[j].ack === id) { kotaListe.splice(j, 1); retire = 1; }
+      return retire ? 1 : 0;
+    }
+    var ack = '', label = '';
+    if (m.actions) for (var k = 0; k < m.actions.length; k++) {
+      if (m.actions[k].action === 'http' && m.actions[k].body) { ack = m.actions[k].body; label = m.actions[k].label || 'On arrive'; }
+    }
+    if (ack && kotaRepondus[ack]) return 0;   // déjà pris en charge avant même d'arriver ici
+    kotaListe.push({ titre: m.title || 'Kota', msg: m.message || '', ack: ack, label: label, t: m.time });
+    if (kotaListe.length > 4) kotaListe.splice(0, kotaListe.length - 4);
+    return 2;
+  }
+  function kotaApres(r) {
+    if (r === 2 && kotaListe.length) kotaAlerte(kotaListe[kotaListe.length - 1]);
+    if (r) kotaRender();
+  }
+  // Réception instantanée : connexion ouverte en permanence avec ntfy, comme l'appli du téléphone
+  var kotaES = null, kotaDernierSignal = 0;
+  function kotaConnecter() {
+    if (window.innerWidth <= 700 || !window.EventSource) return;   // les téléphones ont déjà l'appli ntfy
+    try { if (kotaES) kotaES.close(); } catch (e) {}
+    kotaDernierSignal = new Date().getTime();
+    try {
+      kotaES = new EventSource(kotaUrl + '/sse?since=' + kotaDepuis);
+      var signal = function () { kotaDernierSignal = new Date().getTime(); };
+      kotaES.onopen = signal;
+      kotaES.addEventListener('open', signal, false);
+      kotaES.addEventListener('keepalive', signal, false);
+      kotaES.onmessage = function (ev) {
+        signal();
+        var m; try { m = JSON.parse(ev.data); } catch (e) { return; }
+        kotaApres(kotaTraiter(m));
+      };
+    } catch (e) { kotaES = null; }
+  }
+  // Si la connexion se tait plus de 2 minutes (ntfy envoie un signal toutes les 45 s), on la rouvre
+  function kotaSurveiller() {
+    if (window.innerWidth <= 700) return;
+    if (!kotaES || kotaES.readyState === 2 || new Date().getTime() - kotaDernierSignal > 120 * 1000) kotaConnecter();
+  }
+  // Vérification de secours, au cas où la connexion instantanée aurait raté quelque chose
   function kotaPoll() {
-    if (window.innerWidth <= 700) return;   // les téléphones ont déjà l'appli ntfy
+    if (window.innerWidth <= 700) return;
     var x = new XMLHttpRequest();
-    x.open('GET', KOTA.serveur + '/' + KOTA.canal + ',' + KOTA.canal + '-retour/json?poll=1&since=' + kotaDepuis, true);
+    x.open('GET', kotaUrl + '/json?poll=1&since=' + kotaDepuis, true);
     x.timeout = 15000;
     x.onload = function () {
       if (x.status !== 200) return;
-      var lignes = x.responseText.split('\n'), nouveau = false, change = false;
+      var lignes = x.responseText.split('\n'), r = 0;
       for (var i = 0; i < lignes.length; i++) {
         var m;
         try { m = JSON.parse(lignes[i]); } catch (e) { continue; }
-        if (!m || m.event !== 'message' || kotaVus[m.id]) continue;
-        kotaVus[m.id] = 1;
-        if (m.time > kotaDepuis) kotaDepuis = m.time;
-        if (m.topic === KOTA.canal + '-retour') {   // quelqu'un a répondu depuis son téléphone
-          var id = String(m.message || '').replace(/^\s+|\s+$/g, '');
-          for (var j = kotaListe.length - 1; j >= 0; j--) if (kotaListe[j].ack === id) { kotaListe.splice(j, 1); change = true; }
-          continue;
-        }
-        var ack = '', label = '';
-        if (m.actions) for (var k = 0; k < m.actions.length; k++) {
-          if (m.actions[k].action === 'http' && m.actions[k].body) { ack = m.actions[k].body; label = m.actions[k].label || 'On arrive'; }
-        }
-        kotaListe.push({ titre: m.title || 'Kota', msg: m.message || '', ack: ack, label: label, t: m.time });
-        nouveau = true;
+        r = Math.max(r, kotaTraiter(m));
       }
-      if (kotaListe.length > 4) kotaListe.splice(0, kotaListe.length - 4);
-      if (nouveau) kotaAlerte(kotaListe[kotaListe.length - 1]);
-      if (nouveau || change) kotaRender();
+      kotaApres(r);
     };
     x.send();
   }
   function kotaAlerte(n) {
+    if (!n) return;
     wakeUp();
     tmBeep();
     if (window.Assistant) Assistant.speak('Kota : ' + n.titre.replace(/^.*?[–-]\s*/, ''));
@@ -729,8 +766,10 @@
     x.send(n.ack);
     kotaFermer(i);
   }
-  setTimeout(kotaPoll, 3000);
-  setInterval(kotaPoll, 20 * 1000);
+  setTimeout(function () { kotaPoll(); kotaConnecter(); }, 3000);
+  setInterval(kotaSurveiller, 30 * 1000);
+  setInterval(kotaPoll, 60 * 1000);
+  document.addEventListener('visibilitychange', function () { if (!document.hidden) { kotaPoll(); kotaSurveiller(); } }, false);
   setInterval(kotaRender, 60 * 1000);
   // Sur iPad, le son ne peut être joué qu'après un premier appui sur l'écran
   document.addEventListener('touchstart', function () { tmUnlock(); }, false);
